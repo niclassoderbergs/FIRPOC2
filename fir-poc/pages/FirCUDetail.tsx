@@ -32,10 +32,12 @@ import {
   ArrowDown,
   Briefcase,
   ChevronLeft,
-  UserPlus
+  UserPlus,
+  Globe,
+  TowerControl
 } from 'lucide-react';
 import { pocStyles } from '../styles';
-import { CU, mockSPGs, mockGridConstraints, mockSPGProductApplications, baselineMethods, mockBids, POC_NOW, mockCUs } from '../mockData';
+import { CU, mockSPGs, mockGridConstraints, mockSPGProductApplications, baselineMethods, mockBids, POC_NOW, mockCUs, svkProducts } from '../mockData';
 
 interface Props {
   cu: CU;
@@ -172,13 +174,17 @@ const styles = {
     overflow: 'hidden'
   },
   subSectionTitle: {
-    fontSize: '0.8rem',
+    fontSize: '0.75rem',
     fontWeight: 700,
-    color: '#6b778c',
+    color: '#42526e',
     textTransform: 'uppercase' as const,
     letterSpacing: '0.05em',
-    marginBottom: '12px',
-    display: 'block'
+    marginBottom: '16px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    borderBottom: '1px solid #ebecf0',
+    paddingBottom: '8px'
   },
   historyToggle: {
     display: 'flex',
@@ -366,6 +372,27 @@ export const FirCUDetail: React.FC<Props> = ({ cu, prevCU, nextCU, onSelectCU, o
   
   const activeQualifications = [...new Set([...(currentSpg?.qualifications || []), ...newlyApprovedProducts])];
   
+  // Separation logic for TSO vs DSO products
+  const { tsoQualifications, dsoQualifications } = useMemo(() => {
+    const tso: any[] = [];
+    const dso: any[] = [];
+    
+    activeQualifications.forEach(productId => {
+      const productMeta = svkProducts.find(p => p.id === productId);
+      const isConfigured = cu.productBaselines.some(pb => pb.productId === productId);
+      
+      const item = { productId, isConfigured };
+      
+      if (productMeta?.market.includes('TSO')) {
+        tso.push(item);
+      } else {
+        dso.push(item);
+      }
+    });
+
+    return { tsoQualifications: tso, dsoQualifications: dso };
+  }, [activeQualifications, cu.productBaselines]);
+
   // Calculate Historical Verifications for this CU
   const historicalVerifications = useMemo(() => {
     if (!cu.spgId) return [];
@@ -450,6 +477,29 @@ export const FirCUDetail: React.FC<Props> = ({ cu, prevCU, nextCU, onSelectCU, o
         ) : (
             <span style={{ color: '#6b778c', fontStyle: 'italic' }}>N/A (Unassigned)</span>
         )}
+    </div>
+  );
+
+  const renderQualCard = (pd: { productId: string; isConfigured: boolean }) => (
+    <div key={pd.productId} style={{
+        ...styles.qualCard,
+        backgroundColor: !pd.isConfigured ? '#fff9e6' : '#f4fbf8',
+        borderColor: !pd.isConfigured ? '#ffab00' : '#36b37e'
+    }}>
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%'}}>
+            <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                <Zap size={18} color={!pd.isConfigured ? '#d46b08' : '#36b37e'} />
+                <span style={{fontSize: '0.9rem', fontWeight: 600, color: '#172b4d'}}>{pd.productId}</span>
+            </div>
+            <span style={{
+                ...pocStyles.badge, 
+                backgroundColor: !pd.isConfigured ? '#ffebe6' : '#e3fcef',
+                color: !pd.isConfigured ? '#bf2600' : '#006644',
+                fontSize: '0.65rem'
+            }}>
+                {!pd.isConfigured ? 'BASELINE MISSING' : 'READY'}
+            </span>
+        </div>
     </div>
   );
 
@@ -589,32 +639,29 @@ export const FirCUDetail: React.FC<Props> = ({ cu, prevCU, nextCU, onSelectCU, o
                         </span>
                     </div>
                     
-                    <div style={{marginBottom: '24px'}}>
-                        <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px'}}>
-                            {productComplianceData.length > 0 ? productComplianceData.map(pd => (
-                                <div key={pd.productId} style={{
-                                    ...styles.qualCard,
-                                    backgroundColor: !pd.isConfigured ? '#fff9e6' : '#f4fbf8',
-                                    borderColor: !pd.isConfigured ? '#ffab00' : '#36b37e'
-                                }}>
-                                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%'}}>
-                                        <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                                            <Zap size={18} color={!pd.isConfigured ? '#d46b08' : '#36b37e'} />
-                                            <span style={{fontSize: '0.9rem', fontWeight: 600, color: '#172b4d'}}>{pd.productId}</span>
-                                        </div>
-                                        <span style={{
-                                            ...pocStyles.badge, 
-                                            backgroundColor: !pd.isConfigured ? '#ffebe6' : '#e3fcef',
-                                            color: !pd.isConfigured ? '#bf2600' : '#006644',
-                                            fontSize: '0.65rem'
-                                        }}>
-                                            {!pd.isConfigured ? 'BASELINE MISSING' : 'READY'}
-                                        </span>
-                                    </div>
-                                </div>
-                            )) : (
-                                <div style={{color: '#6b778c', fontStyle: 'italic', fontSize: '0.9rem'}}>No active product qualifications for this unit.</div>
-                            )}
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '32px', marginTop: '24px'}}>
+                        {/* TSO SECTION */}
+                        <div>
+                            <span style={styles.subSectionTitle}>
+                                <Globe size={16} color="#0052cc" /> TSO Balancing Products
+                            </span>
+                            <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px'}}>
+                                {tsoQualifications.length > 0 ? tsoQualifications.map(renderQualCard) : (
+                                    <div style={{color: '#6b778c', fontStyle: 'italic', fontSize: '0.9rem', padding: '12px'}}>No TSO products qualified.</div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* DSO SECTION */}
+                        <div>
+                            <span style={styles.subSectionTitle}>
+                                <TowerControl size={16} color="#4a148c" /> DSO Local Products
+                            </span>
+                            <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px'}}>
+                                {dsoQualifications.length > 0 ? dsoQualifications.map(renderQualCard) : (
+                                    <div style={{color: '#6b778c', fontStyle: 'italic', fontSize: '0.9rem', padding: '12px'}}>No DSO products qualified.</div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </>
