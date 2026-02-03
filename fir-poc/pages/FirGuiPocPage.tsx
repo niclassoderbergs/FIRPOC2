@@ -1,35 +1,54 @@
+
 import React, { useState, useCallback, useMemo } from 'react';
-import { pocStyles } from './fir-poc/styles';
+import { pocStyles } from '../styles';
 import { Menu, ArrowLeft } from 'lucide-react';
-import { FirSidebar, PocView } from './fir-poc/FirSidebar';
-import { FirDashboard } from './fir-poc/pages/FirDashboard';
-import { FirCUList } from './fir-poc/pages/FirCUList';
-import { FirCUDetail } from './fir-poc/pages/FirCUDetail';
-import { FirSPGList } from './fir-poc/pages/FirSPGList';
-import { FirSPGDetail } from './fir-poc/pages/FirSPGDetail';
-import { FirGenericList } from './fir-poc/pages/FirGenericList';
-import { FirPrequalificationList } from './fir-poc/pages/FirPrequalificationList';
-import { FirGridConstraintsList } from './fir-poc/pages/FirGridConstraintsList';
-import { FirGridConstraintDetail } from './fir-poc/pages/FirGridConstraintDetail';
-import { FirPartiesList } from './fir-poc/pages/FirPartiesList';
-import { FirBspList } from './fir-poc/pages/FirBspList';
-import { FirDsoList } from './fir-poc/pages/FirDsoList';
-import { FirReList } from './fir-poc/pages/FirReList';
-import { FirBrpList } from './fir-poc/pages/FirBrpList';
-import { FirPartyDetail } from './fir-poc/pages/FirPartyDetail';
-import { FirProductTypeList } from './fir-poc/pages/FirProductTypeList';
-import { FirProductDetail } from './fir-poc/pages/FirProductDetail';
-import { FirServiceProviderApplications } from './fir-poc/pages/FirServiceProviderApplications';
-import { FirSPGProductApplications } from './fir-poc/pages/FirSPGProductApplications';
-import { FirBaselineList } from './fir-poc/pages/FirBaselineList';
-import { FirBidsReceived } from './fir-poc/pages/FirBidsReceived';
-import { FirBidsActivated } from './fir-poc/pages/FirBidsActivated';
-import { FirVerificationList } from './fir-poc/pages/FirVerificationList';
-import { FirVerificationDetail } from './fir-poc/pages/FirVerificationDetail';
-import { FirBspSettlement } from './fir-poc/pages/FirBspSettlement';
-import { FirBrpSettlement } from './fir-poc/pages/FirBrpSettlement';
-import { FirReSettlement } from './fir-poc/pages/FirReSettlement';
-import { mockCUs, CU } from './fir-poc/mockData';
+import { FirSidebar, PocView } from '../FirSidebar';
+import { FirDashboard } from './FirDashboard';
+import { FirCUList } from './FirCUList';
+import { FirCUDetail } from './FirCUDetail';
+import { FirSPGList } from './FirSPGList';
+import { FirSPGDetail } from './FirSPGDetail';
+import { FirGenericList } from './FirGenericList';
+import { FirPrequalificationList } from './FirPrequalificationList';
+import { FirGridConstraintsList } from './FirGridConstraintsList';
+import { FirGridConstraintDetail } from './FirGridConstraintDetail';
+import { FirPartiesList } from './FirPartiesList';
+import { FirBspList } from './FirBspList';
+import { FirSpList } from './FirSpList';
+import { FirDsoList } from './FirDsoList';
+import { FirReList } from './FirReList';
+import { FirBrpList } from './FirBrpList';
+import { FirRegResponsibleList } from './FirRegResponsibleList';
+import { FirPartyDetail } from './FirPartyDetail';
+import { FirProductTypeList } from './FirProductTypeList';
+import { FirProductDetail } from './FirProductDetail';
+import { FirServiceProviderApplications } from './FirServiceProviderApplications';
+import { FirSPGProductApplications } from './FirSPGProductApplications';
+import { FirBaselineList } from './FirBaselineList';
+import { FirLocalMarketList } from './FirLocalMarketList';
+import { FirLocalMarketDetail } from './FirLocalMarketDetail';
+import { FirBidsReceived } from './FirBidsReceived';
+import { FirBidsActivated } from './FirBidsActivated';
+import { FirVerificationList } from './FirVerificationList';
+import { FirVerificationDetail } from './FirVerificationDetail';
+import { FirBspSettlement } from './FirBspSettlement';
+import { FirBrpSettlement } from './FirBrpSettlement';
+import { FirReSettlement } from './FirReSettlement';
+import { 
+  mockCUs, 
+  CU, 
+  mockBids, 
+  mockSPGs, 
+  mockDSOs, 
+  mockREs, 
+  mockBRPs, 
+  mockBSPs, 
+  svkProducts, 
+  mockGridConstraints,
+  mockSPs,
+  mockRegResponsibles,
+  mockLocalMarkets
+} from '../mockData';
 
 interface NavigationState {
     view: PocView;
@@ -39,6 +58,7 @@ interface NavigationState {
     product: string | null;
     constraint: string | null;
     bidId: string | null;
+    localMarketId: string | null;
 }
 
 export const FirGuiPocPage: React.FC = () => {
@@ -49,6 +69,7 @@ export const FirGuiPocPage: React.FC = () => {
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [selectedConstraintId, setSelectedConstraintId] = useState<string | null>(null);
   const [selectedBidId, setSelectedBidId] = useState<string | null>(null);
+  const [selectedLocalMarketId, setSelectedLocalMarketId] = useState<string | null>(null);
   
   const [history, setHistory] = useState<NavigationState[]>([]);
 
@@ -60,9 +81,10 @@ export const FirGuiPocPage: React.FC = () => {
         party: selectedPartyName,
         product: selectedProductId,
         constraint: selectedConstraintId,
-        bidId: selectedBidId
+        bidId: selectedBidId,
+        localMarketId: selectedLocalMarketId
     }]);
-  }, [currentView, selectedCU, selectedSpgId, selectedPartyName, selectedProductId, selectedConstraintId, selectedBidId]);
+  }, [currentView, selectedCU, selectedSpgId, selectedPartyName, selectedProductId, selectedConstraintId, selectedBidId, selectedLocalMarketId]);
 
   const handleGoBack = useCallback(() => {
     if (history.length === 0) return;
@@ -75,6 +97,7 @@ export const FirGuiPocPage: React.FC = () => {
     setSelectedProductId(previous.product);
     setSelectedConstraintId(previous.constraint);
     setSelectedBidId(previous.bidId);
+    setSelectedLocalMarketId(previous.localMarketId);
   }, [history]);
 
   const handleNavigate = useCallback((view: PocView) => {
@@ -86,6 +109,7 @@ export const FirGuiPocPage: React.FC = () => {
     setSelectedProductId(null);
     setSelectedConstraintId(null);
     setSelectedBidId(null);
+    setSelectedLocalMarketId(null);
   }, [pushHistory]);
 
   const handleSelectCU = useCallback((id: string) => {
@@ -108,7 +132,7 @@ export const FirGuiPocPage: React.FC = () => {
   const handleSelectParty = useCallback((name: string) => {
     pushHistory();
     setSelectedPartyName(name);
-    if (!['dsos', 'res', 'brps', 'bsp', 'parties', 'overview'].includes(currentView)) {
+    if (!['dsos', 'res', 'brps', 'bsp', 'sp', 'reg_responsible', 'parties', 'overview'].includes(currentView)) {
         setCurrentView('parties');
     }
   }, [currentView, pushHistory]);
@@ -131,38 +155,36 @@ export const FirGuiPocPage: React.FC = () => {
     setCurrentView('verification');
   }, [pushHistory]);
 
-  const { prevCU, nextCU } = useMemo(() => {
-    if (!selectedCU) return { prevCU: null, nextCU: null };
-    const currentIndex = mockCUs.findIndex(c => c.id === selectedCU.id);
-    return {
-        prevCU: currentIndex > 0 ? mockCUs[currentIndex - 1] : null,
-        nextCU: currentIndex < mockCUs.length - 1 ? mockCUs[currentIndex + 1] : null
-    };
-  }, [selectedCU]);
+  const handleSelectLocalMarket = useCallback((id: string) => {
+    pushHistory();
+    setSelectedLocalMarketId(id);
+    setCurrentView('local_market_detail');
+  }, [pushHistory]);
 
+  // --- RENDERING ---
   const renderContent = () => {
-    // 1. Check Detail views first (if applicable)
-    // Fix: Pass missing onSelectBid prop to detail views
+    if (selectedLocalMarketId && currentView === 'local_market_detail') {
+        return <FirLocalMarketDetail id={selectedLocalMarketId} onBack={handleGoBack} />;
+    }
     if (selectedCU && currentView === 'cus') {
-        return <FirCUDetail cu={selectedCU} prevCU={prevCU} nextCU={nextCU} onSelectCU={handleSelectCU} onBack={handleGoBack} onNavigateToGroup={handleSelectSPG} onSelectParty={handleSelectParty} onSelectBid={handleSelectBid} />;
+        return <FirCUDetail cu={selectedCU} prevCU={null} nextCU={null} onSelectCU={handleSelectCU} onBack={handleGoBack} onNavigateToGroup={handleSelectSPG} onSelectParty={handleSelectParty} onSelectBid={handleSelectBid} />;
     }
     if (selectedSpgId && currentView === 'spgs') {
-        return <FirSPGDetail id={selectedSpgId} onBack={handleGoBack} onSelectCU={handleSelectCU} onSelectBid={handleSelectBid} />;
+        return <FirSPGDetail id={selectedSpgId} prevSpg={null} nextSpg={null} onSelectSPG={handleSelectSPG} onBack={handleGoBack} onSelectCU={handleSelectCU} onSelectBid={handleSelectBid} />;
     }
-    if (selectedPartyName && ['parties', 'overview', 'bsp', 'dsos', 'res', 'brps'].includes(currentView)) {
-        return <FirPartyDetail partyName={selectedPartyName} onBack={handleGoBack} onSelectCU={handleSelectCU} onSelectSPG={handleSelectSPG} />;
+    if (selectedPartyName && ['parties', 'overview', 'bsp', 'sp', 'dsos', 'res', 'brps', 'reg_responsible'].includes(currentView)) {
+        return <FirPartyDetail partyName={selectedPartyName} prevParty={null} nextParty={null} onSelectParty={handleSelectParty} onBack={handleGoBack} onSelectCU={handleSelectCU} onSelectSPG={handleSelectSPG} />;
     }
     if (selectedProductId && currentView === 'prod_types') {
-        return <FirProductDetail productId={selectedProductId} onBack={handleGoBack} onNavigateToGroup={handleSelectSPG} onSelectParty={handleSelectParty} onSelectBid={handleSelectBid} />;
+        return <FirProductDetail productId={selectedProductId} prevProduct={null} nextProduct={null} onSelectProduct={handleSelectProduct} onBack={handleGoBack} onNavigateToGroup={handleSelectSPG} onSelectParty={handleSelectParty} onSelectBid={handleSelectBid} />;
     }
     if (selectedConstraintId && currentView === 'grid_constraint_detail') {
-        return <FirGridConstraintDetail id={selectedConstraintId} onBack={handleGoBack} onSelectCU={handleSelectCU} onSelectSPG={handleSelectSPG} />;
+        return <FirGridConstraintDetail id={selectedConstraintId} prevConstraint={null} nextConstraint={null} onSelectConstraint={handleSelectConstraint} onBack={handleGoBack} onSelectCU={handleSelectCU} onSelectSPG={handleSelectSPG} />;
     }
     if (selectedBidId && currentView === 'verification') {
         return <FirVerificationDetail bidId={selectedBidId} onBack={handleGoBack} onSelectCU={handleSelectCU} onSelectSPG={handleSelectSPG} onSelectBid={handleSelectBid} />;
     }
 
-    // 2. Main Routing Switch
     switch (currentView) {
         case 'dashboard': return <FirDashboard onNavigate={handleNavigate} />;
         case 'cus': return <FirCUList onSelect={handleSelectCU} onSelectSPG={handleSelectSPG} onSelectParty={handleSelectParty} onNavigateToParties={() => handleNavigate('parties')} />;
@@ -174,6 +196,8 @@ export const FirGuiPocPage: React.FC = () => {
         case 'brp_settlement': return <FirBrpSettlement onSelectBid={handleSelectBid} onSelectParty={handleSelectParty} />;
         case 're_settlement': return <FirReSettlement onSelectBid={handleSelectBid} onSelectParty={handleSelectParty} />;
         case 'bsp': return <FirBspList onSelect={handleSelectParty} />;
+        case 'sp': return <FirSpList onSelect={handleSelectParty} />;
+        case 'reg_responsible': return <FirRegResponsibleList onSelect={handleSelectParty} />;
         case 'dsos': return <FirDsoList onSelect={handleSelectParty} />;
         case 'res': return <FirReList onSelect={handleSelectParty} />;
         case 'brps': return <FirBrpList onSelect={handleSelectParty} />;
@@ -185,11 +209,13 @@ export const FirGuiPocPage: React.FC = () => {
         case 'sp_applications': return <FirServiceProviderApplications />;
         case 'spg_applications': return <FirSPGProductApplications onSelectSPG={handleSelectSPG} />;
         case 'baselines': return <FirBaselineList />;
+        case 'local_markets': return <FirLocalMarketList onSelect={handleSelectLocalMarket} />;
         default: return <FirGenericList title={currentView} />;
     }
   };
 
   const getPageTitle = () => {
+    if (selectedLocalMarketId && currentView === 'local_market_detail') return `Local Market: ${selectedLocalMarketId}`;
     if (selectedCU && currentView === 'cus') return `Controllable unit ${selectedCU.id}`;
     if (selectedSpgId && currentView === 'spgs') return `SPG ${selectedSpgId}`;
     if (selectedPartyName) return `Party: ${selectedPartyName}`;
@@ -198,20 +224,9 @@ export const FirGuiPocPage: React.FC = () => {
     if (selectedBidId && currentView === 'verification') return `Verification: ${selectedBidId}`;
     
     switch(currentView) {
+        case 'local_markets': return 'Local flexmarknad';
         case 'parties': return 'Global Parties Overview';
-        case 'bsp': return 'Balance Service Providers (BSP)';
-        case 'dsos': return 'Distribution System Operators (DSO)';
-        case 'res': return 'Retail Entities (RE)';
-        case 'brps': return 'Balance Responsible Parties (BRP)';
         case 'cus': return 'Controllable Units';
-        case 'spgs': return 'Service Providing Groups';
-        case 'bids_received': return 'Received Bids & Capacity Validation';
-        case 'bids_activated': return 'Market Dispatch & Activation';
-        case 'verification': return 'Settlement Verification';
-        case 'settlement_result': return 'BSP Settlement';
-        case 'brp_settlement': return 'BRP Settlement';
-        case 're_settlement': return 'RE Settlement';
-        case 'grid_constraints': return 'Temporary Grid Constraints';
         case 'dashboard': return 'System Dashboard';
         default: return 'Flexibility Information System Portal';
     }
@@ -224,35 +239,17 @@ export const FirGuiPocPage: React.FC = () => {
         <div style={pocStyles.topBar}>
           <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
             {history.length > 0 && (
-                <button 
-                    onClick={handleGoBack}
-                    style={{
-                        background: 'rgba(255,255,255,0.1)',
-                        border: '1px solid rgba(255,255,255,0.2)',
-                        borderRadius: '6px',
-                        padding: '6px 12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                        cursor: 'pointer',
-                        color: 'white',
-                        marginRight: '8px',
-                        fontSize: '0.85rem',
-                        fontWeight: 600
-                    }}
-                >
-                    <ArrowLeft size={16} />
-                    <span>Back</span>
+                <button onClick={handleGoBack} style={pocStyles.actionButton}>
+                    <ArrowLeft size={16} /> Back
                 </button>
             )}
-            <Menu size={20} style={{cursor: 'pointer', opacity: history.length > 0 ? 0.7 : 1}} />
+            <Menu size={20} style={{cursor: 'pointer'}} />
             <span style={{fontWeight: 600, letterSpacing: '0.5px', marginLeft: '8px'}}>
                 {getPageTitle()}
             </span>
           </div>
           <div style={{display: 'flex', gap: '12px'}}>
-             <button style={pocStyles.actionButton}>Service Provider</button>
+             <button style={pocStyles.actionButton}>Registry Admin</button>
           </div>
         </div>
         {renderContent()}

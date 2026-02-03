@@ -1,6 +1,6 @@
 
-import { CU, SPG, Bid } from './types';
-export type { CU, SPG, Bid };
+import { CU, SPG, Bid, LocalMarket } from './types';
+export type { CU, SPG, Bid, LocalMarket };
 
 import { mockBSPs } from './data/bsps';
 import { mockSPs } from './data/sps';
@@ -17,6 +17,7 @@ import { mockBids } from './data/bids';
 import { mockMarketStats, swedishMarketTotals } from './data/marketStats';
 import { mockSPGProductApplications } from './data/spgProductApplications';
 import { mockSPApplications } from './data/spApplications';
+import { mockLocalMarkets } from './data/localMarkets';
 
 // SYSTEM TIME LOCK
 export const POC_NOW = new Date('2026-01-31T10:00:00Z');
@@ -37,5 +38,6 @@ export {
   mockMarketStats, 
   swedishMarketTotals, 
   mockSPGProductApplications, 
-  mockSPApplications 
+  mockSPApplications,
+  mockLocalMarkets
 };

@@ -84,3 +84,12 @@ export interface GridConstraint {
   affectedUnits: string[];
   reason: string;
 }
+
+export interface LocalMarket {
+  id: string;
+  name: string;
+  owner: string;
+  description: string;
+  status: 'Active' | 'Planned';
+  products: string[];
+}

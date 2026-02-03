@@ -20,7 +20,8 @@ import {
   FileBarChart,
   FilePieChart,
   UserPlus,
-  ShieldCheck
+  ShieldCheck,
+  MapPin
 } from 'lucide-react';
 import { pocStyles } from './styles';
 
@@ -46,6 +47,8 @@ export type PocView =
   | 'notifications'
   | 'notices'
   | 'baselines'
+  | 'local_markets'
+  | 'local_market_detail'
   | 'overview'
   | 'bids_received'
   | 'bids_activated'
@@ -62,7 +65,7 @@ interface SidebarProps {
 export const FirSidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }) => {
   
   const renderItem = (view: PocView, IconComponent: any, label: string) => {
-    const isActive = currentView === view || (view === 'grid_constraints' && currentView === 'grid_constraint_detail');
+    const isActive = currentView === view || (view === 'grid_constraints' && currentView === 'grid_constraint_detail') || (view === 'local_markets' && currentView === 'local_market_detail');
     return (
       <div 
         onClick={() => onNavigate(view)}
@@ -121,9 +124,10 @@ export const FirSidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }) 
         {renderItem('brp_settlement', FilePieChart, 'BRP settlement')}
         {renderItem('re_settlement', FilePieChart, 'RE settlement')}
 
-        {renderTitle('Market parameters')}
+        {renderTitle('Market parameter')}
         {renderItem('baselines', TrendingUp, 'Baselines')}
         {renderItem('prod_types', Settings, 'Product types')}
+        {renderItem('local_markets', MapPin, 'Local flexmarknad')}
 
         {renderTitle('Product application')}
         {renderItem('sp_applications', FileText, 'Service provider applications')}
