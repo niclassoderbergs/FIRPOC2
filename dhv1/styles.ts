@@ -1,0 +1,38 @@
+
+import React from 'react';
+
+export const styles: Record<string, React.CSSProperties> = {
+  appContainer: { display: 'flex', flexDirection: 'column', height: '100vh', fontFamily: '"Segoe UI", Roboto, Helvetica, Arial, sans-serif' },
+  header: { backgroundColor: '#0747a6', color: 'white', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', zIndex: 10 },
+  logo: { fontSize: '1.2rem', fontWeight: 700, letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '10px' },
+  sidebar: { width: '300px', backgroundColor: '#fafbfc', borderRight: '1px solid #ebecf0', overflowY: 'auto', display: 'flex', flexDirection: 'column' },
+  mainScroll: { flex: 1, overflowY: 'auto', backgroundColor: '#ffffff', padding: '0' },
+  paper: { backgroundColor: 'transparent', boxShadow: 'none', padding: '40px 60px', maxWidth: '1500px', margin: '0 auto', minHeight: '100%', width: '100%', boxSizing: 'border-box' },
+  treeGroup: { marginBottom: '8px' },
+  treeHeader: { padding: '8px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', fontWeight: 600, color: '#42526e', userSelect: 'none' },
+  treeHeaderHover: { backgroundColor: '#ebecf0' },
+  treeContent: { display: 'flex', flexDirection: 'column' },
+  treeItem: { padding: '8px 16px 8px 32px', cursor: 'pointer', color: '#172b4d', fontSize: '0.9rem', border: 'none', background: 'none', width: '100%', textAlign: 'left', display: 'block', textDecoration: 'none' },
+  treeItemActive: { backgroundColor: '#e6effc', color: '#0052cc', fontWeight: 500, borderRight: '3px solid #0052cc' },
+  treeLabel: { marginLeft: '8px' },
+  treeArrow: { width: '20px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#6b778c' },
+  menuHeader: { padding: '16px 16px 8px', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#6b778c', letterSpacing: '0.5px' },
+  docId: { fontSize: '0.85rem', color: '#6b778c', fontWeight: 600, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' },
+  docTitle: { fontSize: '2.5rem', fontWeight: 800, color: '#172b4d', marginBottom: '32px', lineHeight: 1.2, letterSpacing: '-0.5px' },
+  sectionHeader: { fontSize: '1.5rem', fontWeight: 700, color: '#172b4d', marginTop: '48px', marginBottom: '24px', borderBottom: '1px solid #ebecf0', paddingBottom: '8px' },
+  subHeader: { fontSize: '1.1rem', fontWeight: 600, color: '#42526e', marginTop: '32px', marginBottom: '16px' },
+  subSubHeader: { fontSize: '0.95rem', fontWeight: 600, color: '#5e6c84', marginTop: '24px', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' },
+  paragraph: { fontSize: '1rem', lineHeight: '1.7', color: '#172b4d', marginBottom: '24px' },
+  input: { width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #dfe1e6', fontSize: '1rem', marginBottom: '16px', boxSizing: 'border-box' },
+  diagramWrapper: { margin: '32px 0', border: '1px solid #ebecf0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' },
+  caption: { textAlign: 'center', fontSize: '0.85rem', color: '#6b778c', marginTop: '8px', fontStyle: 'italic' },
+  captionId: { fontWeight: 600, fontStyle: 'normal' },
+  treeSubHeaderContainer: { display: 'flex', alignItems: 'center', padding: '6px 16px 6px 24px', cursor: 'pointer' },
+  treeSubHeaderArrow: { width: '16px', display: 'flex', justifyContent: 'center', marginRight: '4px', color: '#6b778c' },
+  treeSubHeaderLabel: { fontSize: '0.75rem', fontWeight: 700, color: '#6b778c', textTransform: 'uppercase' },
+  arrow: { display: 'inline-block', width: '16px', textAlign: 'center', transition: 'transform 0.2s' },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', borderTop: '1px solid #dfe1e6', marginBottom: '24px' },
+  th: { backgroundColor: '#fafbfc', color: '#42526e', padding: '12px 16px', textAlign: 'left', borderBottom: '2px solid #dfe1e6', fontWeight: 600 },
+  td: { padding: '12px 16px', borderBottom: '1px solid #ebecf0', verticalAlign: 'top', color: '#172b4d', lineHeight: '1.6' },
+  trEven: { backgroundColor: '#fff' }
+};
