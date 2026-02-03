@@ -10,6 +10,8 @@ import { DsoRoleView } from './party-roles/DsoRoleView';
 import { ReRoleView } from './party-roles/ReRoleView';
 import { BrpRoleView } from './party-roles/BrpRoleView';
 import { SpRoleView } from './party-roles/SpRoleView';
+import { SpAgreementView } from './party-roles/SpAgreementView';
+import { CurrRoleView } from './party-roles/CurrRoleView';
 import { TechnicalDetails } from './party-roles/TechnicalDetails';
 
 interface Props {
@@ -52,14 +54,20 @@ const styles = {
 
 export const FirPartyDetail: React.FC<Props> = ({ partyName, prevParty, nextParty, onSelectParty, onBack, onSelectCU, onSelectSPG }) => {
   // 1. Determine Roles using dedicated registries
-  const roles = useMemo(() => ({
-    isDSO: mockDSOs.some(d => d.name === partyName),
-    isRE: mockREs.some(r => r.name === partyName),
-    isBRP: mockBRPs.some(b => b.name === partyName),
-    isBSP: mockBSPs.some(s => s.name === partyName),
-    isSP: mockSPs.some(s => s.name === partyName) || mockCUs.some(c => c.sp === partyName),
-    isREG: mockRegResponsibles.some(r => r.name === partyName)
-  }), [partyName]);
+  const roles = useMemo(() => {
+    const isBSP = mockBSPs.some(s => s.name === partyName);
+    const isSP = isBSP || mockSPs.some(s => s.name === partyName) || mockCUs.some(c => c.sp === partyName);
+    const isREG = mockRegResponsibles.some(r => r.name === partyName) || mockCUs.some(c => c.registrationResponsible === partyName);
+    
+    return {
+        isDSO: mockDSOs.some(d => d.name === partyName),
+        isRE: mockREs.some(r => r.name === partyName),
+        isBRP: mockBRPs.some(b => b.name === partyName),
+        isBSP,
+        isSP,
+        isREG
+    };
+  }, [partyName]);
 
   // 2. Aggregate Data for SP/BSP
   const ownedCUs = useMemo(() => mockCUs.filter(cu => cu.sp === partyName), [partyName]);
@@ -124,11 +132,22 @@ export const FirPartyDetail: React.FC<Props> = ({ partyName, prevParty, nextPart
 
       <TechnicalDetails isDSO={roles.isDSO} isRE={roles.isRE} />
 
+      {roles.isREG && (
+        <CurrRoleView partyName={partyName} onSelectCU={onSelectCU} />
+      )}
+
+      {/* SERVICE PROVIDER ROLE: Always show agreements if actor is SP */}
       {roles.isSP && (
+        <SpAgreementView partyName={partyName} onSelectCU={onSelectCU} />
+      )}
+
+      {/* BALANCE SERVICE PROVIDER ROLE: Only show portfolios/settlement if actor is BSP */}
+      {roles.isBSP && (
         <SpRoleView 
           managedSPGs={managedSPGs} 
           ownedCUs={ownedCUs} 
           onSelectSPG={onSelectSPG} 
+          isBSP={true}
         />
       )}
 

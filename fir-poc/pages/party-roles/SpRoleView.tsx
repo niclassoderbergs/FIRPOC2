@@ -1,7 +1,6 @@
 
 import React, { useMemo } from 'react';
-// Fix: Added missing 'Download' import from lucide-react
-import { Briefcase, Coins, CheckCircle2, Zap, Info, Activity, FileSearch, TrendingUp, ArrowRight, Calendar, Download } from 'lucide-react';
+import { Briefcase, Coins, CheckCircle2, Zap, Activity, TrendingUp, Calendar, Download, Info } from 'lucide-react';
 import { pocStyles } from '../../styles';
 import { mockBids, POC_NOW, mockCUs } from '../../mockData';
 
@@ -9,9 +8,9 @@ interface Props {
   managedSPGs: any[];
   ownedCUs: any[];
   onSelectSPG: (id: string) => void;
+  isBSP: boolean;
 }
 
-// Consistent delivery factor logic to match the verification page
 const getSeededDeliveryFactor = (id: string) => {
     let hash = 0;
     for (let i = 0; i < id.length; i++) {
@@ -25,8 +24,8 @@ const getSeededDeliveryFactor = (id: string) => {
     return 1.0 + (avg * 0.4);
 };
 
-export const SpRoleView: React.FC<Props> = ({ managedSPGs, ownedCUs, onSelectSPG }) => {
-  const partyName = managedSPGs[0]?.fsp || 'Service Provider';
+export const SpRoleView: React.FC<Props> = ({ managedSPGs, ownedCUs, onSelectSPG, isBSP }) => {
+  const partyName = managedSPGs[0]?.fsp || 'Balance Service Provider';
   const oneWeekAgo = new Date(POC_NOW.getTime() - (7 * 24 * 60 * 60 * 1000));
 
   const totalCapacityMW = useMemo(() => {
@@ -36,7 +35,6 @@ export const SpRoleView: React.FC<Props> = ({ managedSPGs, ownedCUs, onSelectSPG
     }, 0);
   }, [ownedCUs]);
 
-  // Settlement Data Calculation
   const settlement = useMemo(() => {
     const verifiedBids = mockBids.filter(bid => {
       const bidTime = new Date(bid.timestamp);
@@ -49,13 +47,12 @@ export const SpRoleView: React.FC<Props> = ({ managedSPGs, ownedCUs, onSelectSPG
     }).map(bid => {
         const factor = getSeededDeliveryFactor(bid.id);
         const verifiedMW = bid.volumeMW * factor;
-        const verifiedMWh = verifiedMW * 0.25; // 15 min MTU
+        const verifiedMWh = verifiedMW * 0.25;
         const accuracy = Math.round(factor * 100);
         return { ...bid, verifiedMW, verifiedMWh, accuracy };
     });
 
     const totalEnergy = verifiedBids.reduce((sum, b) => sum + b.verifiedMWh, 0);
-    
     const weeklyBids = verifiedBids.filter(b => new Date(b.timestamp) >= oneWeekAgo);
     const weeklyEnergy = weeklyBids.reduce((sum, b) => sum + b.verifiedMWh, 0);
     const weeklyCapacity = weeklyBids.reduce((sum, b) => sum + b.verifiedMW, 0);
@@ -74,7 +71,7 @@ export const SpRoleView: React.FC<Props> = ({ managedSPGs, ownedCUs, onSelectSPG
     <div style={{ ...pocStyles.section, borderLeft: '4px solid #0052cc' }}>
       <h3 style={pocStyles.sectionTitle}>
         <Briefcase size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} /> 
-        Role: Balance Service Provider (BSP)
+        Role: Balance Service Provider (BSP) — Market Operations
       </h3>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '32px' }}>
@@ -86,16 +83,15 @@ export const SpRoleView: React.FC<Props> = ({ managedSPGs, ownedCUs, onSelectSPG
         <div style={{ backgroundColor: '#e6effc', padding: '16px', borderRadius: '8px', border: '1px solid #b3d4ff' }}>
           <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#0052cc', textTransform: 'uppercase' }}>Qualified Capacity</div>
           <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0052cc' }}>{totalCapacityMW.toFixed(1)} MW</div>
-          <div style={{ fontSize: '0.75rem', color: '#0052cc', marginTop: '4px' }}>Gross potential across all zones</div>
+          <div style={{ fontSize: '0.75rem', color: '#0052cc', marginTop: '4px' }}>Gross potential in market</div>
         </div>
         <div style={{ backgroundColor: '#e3fcef', padding: '16px', borderRadius: '8px', border: '1px solid #b3dfc1' }}>
-          <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#006644', textTransform: 'uppercase' }}>Verified Delivery (Total)</div>
+          <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#006644', textTransform: 'uppercase' }}>Verified Delivery</div>
           <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#006644' }}>{settlement.totalMWh} MWh</div>
-          <div style={{ fontSize: '0.75rem', color: '#006644', marginTop: '4px' }}>Accrued settlement basis</div>
+          <div style={{ fontSize: '0.75rem', color: '#006644', marginTop: '4px' }}>Settlement basis (Total)</div>
         </div>
       </div>
 
-      {/* SETTLEMENT AUDIT SECTION */}
       <div style={{ marginBottom: '40px', backgroundColor: '#fafbfc', border: '1px solid #ebecf0', borderRadius: '12px', padding: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h4 style={{ fontSize: '1rem', fontWeight: 700, color: '#172b4d', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -106,13 +102,12 @@ export const SpRoleView: React.FC<Props> = ({ managedSPGs, ownedCUs, onSelectSPG
                     <Calendar size={14} style={{ marginRight: '6px' }} /> Custom Range
                 </button>
                 <button style={{ ...pocStyles.actionButton, backgroundColor: '#0052cc', fontSize: '0.75rem' }}>
-                    <Download size={14} style={{ marginRight: '6px' }} /> Export Settlement XML
+                    <Download size={14} style={{ marginRight: '6px' }} /> Export Data
                 </button>
             </div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' }}>
-            {/* Stats Summary */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div style={{ padding: '16px', backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #ebecf0' }}>
                     <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#6b778c', marginBottom: '8px' }}>LATEST 7 DAYS</div>
@@ -132,12 +127,11 @@ export const SpRoleView: React.FC<Props> = ({ managedSPGs, ownedCUs, onSelectSPG
                         <CheckCircle2 size={14} /> Settlement Ready
                     </div>
                     <p style={{ fontSize: '0.75rem', color: '#006644', margin: 0, lineHeight: '1.4' }}>
-                        All values for the current period have passed the 6h metering frist and are finalized for clearing.
+                        Values are finalized for clearing.
                     </p>
                 </div>
             </div>
 
-            {/* Recent Verified Table */}
             <div style={{ backgroundColor: '#fff', border: '1px solid #ebecf0', borderRadius: '8px', overflow: 'hidden' }}>
                 <table style={pocStyles.table}>
                     <thead style={{ backgroundColor: '#f4f5f7' }}>

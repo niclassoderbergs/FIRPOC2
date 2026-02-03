@@ -1,8 +1,8 @@
 
 import React, { useState, useMemo } from 'react';
 import { pocStyles } from '../styles';
-import { Search, Filter, UserPlus, Globe, ChevronLeft, ChevronRight, Box, Settings } from 'lucide-react';
-import { mockRegResponsibles, mockSPs, mockCUs } from '../mockData';
+import { Search, Filter, UserPlus, Globe, ChevronLeft, ChevronRight, Box, Settings, Briefcase, Zap, TowerControl, ShieldCheck } from 'lucide-react';
+import { mockRegResponsibles, mockSPs, mockBSPs, mockDSOs, mockREs, mockBRPs, mockCUs } from '../mockData';
 
 const PAGE_SIZE = 20;
 
@@ -11,27 +11,25 @@ interface Props {
 }
 
 export const FirRegResponsibleList: React.FC<Props> = ({ onSelect }) => {
-    // ORDAGRANT: Ändrat från hårdkodat ID till null för att visa tabellen initialt
-    const [selectedId, setSelectedId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(0);
 
-    // Process all reg responsibles and match against active units
     const processedList = useMemo(() => {
         return mockRegResponsibles.map(reg => {
-            const registeredUnits = mockCUs.filter(cu => cu.registrationResponsible === reg.name);
-            const isCommercialSP = mockSPs.some(sp => sp.name === reg.name);
+            const name = reg.name;
+            const registeredUnits = mockCUs.filter(cu => cu.registrationResponsible === name);
             
             return {
                 ...reg,
                 count: registeredUnits.length,
-                isCommercialSP
+                isREG: true,
+                isSP: mockSPs.some(s => s.name === name),
+                isBSP: mockBSPs.some(b => b.name === name),
+                isDSO: mockDSOs.some(d => d.name === name),
+                isRE: mockREs.some(r => r.name === name),
+                isBRP: mockBRPs.some(b => b.name === name)
             };
-        }).sort((a, b) => {
-            // Sort by active units first, then alphabetically
-            if (b.count !== a.count) return b.count - a.count;
-            return a.name.localeCompare(b.name);
-        });
+        }).sort((a, b) => a.name.localeCompare(b.name));
     }, []);
 
     const filtered = useMemo(() => {
@@ -50,15 +48,6 @@ export const FirRegResponsibleList: React.FC<Props> = ({ onSelect }) => {
         setSearchTerm(val);
         setCurrentPage(0);
     };
-
-    if (selectedId) {
-        return (
-            <div style={pocStyles.content}>
-                <button onClick={() => setSelectedId(null)} style={pocStyles.actionButton}>Back to list</button>
-                <div style={{marginTop: '20px'}}>Internal Detail View for {selectedId}</div>
-            </div>
-        );
-    }
 
     return (
         <div style={pocStyles.content}>
@@ -92,7 +81,7 @@ export const FirRegResponsibleList: React.FC<Props> = ({ onSelect }) => {
                     <thead style={{backgroundColor: '#fafbfc'}}>
                         <tr>
                             <th style={{...pocStyles.th, width: '30%'}}>Entity Name</th>
-                            <th style={{...pocStyles.th, width: '25%'}}>Role Attributes</th>
+                            <th style={{...pocStyles.th, width: '30%'}}>Identified Roles</th>
                             <th style={{...pocStyles.th, textAlign: 'center'}}>CUs Registered</th>
                             <th style={pocStyles.th}>ID Code</th>
                             <th style={pocStyles.th}>Country</th>
@@ -117,16 +106,20 @@ export const FirRegResponsibleList: React.FC<Props> = ({ onSelect }) => {
                                     </div>
                                 </td>
                                 <td style={pocStyles.td}>
-                                    <div style={{display:'flex', gap:'4px'}}>
-                                        <span style={{...pocStyles.badge, backgroundColor: '#f3e5f5', color: '#4a148c', fontSize: '0.65rem'}} title="Registration Responsible">REG</span>
-                                        {item.isCommercialSP && (
-                                            <span style={{...pocStyles.badge, backgroundColor: '#e6effc', color: '#0052cc', fontSize: '0.65rem'}} title="Also Service Provider">SP</span>
-                                        )}
+                                    <div style={{display:'flex', gap:'4px', flexWrap: 'wrap'}}>
+                                        <span style={{...pocStyles.badge, backgroundColor: '#f3e5f5', color: '#4a148c', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.65rem'}} title="Registration Responsible">
+                                            <UserPlus size={10} /> CU REG RESP
+                                        </span>
+                                        {item.isSP && <span style={{...pocStyles.badge, backgroundColor: '#e6fffa', color: '#006d5b', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.65rem'}} title="Service Provider"><ShieldCheck size={10} /> SP</span>}
+                                        {item.isBSP && <span style={{...pocStyles.badge, backgroundColor: '#deebff', color: '#0747a6', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.65rem'}} title="Balance Service Provider"><Briefcase size={10} /> BSP</span>}
+                                        {item.isBRP && <span style={{...pocStyles.badge, backgroundColor: '#e8f5e9', color: '#1b5e20', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.65rem'}} title="Balance Responsible"><Briefcase size={10} /> BRP</span>}
+                                        {item.isRE && <span style={{...pocStyles.badge, backgroundColor: '#fff3e0', color: '#e65100', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.65rem'}} title="Retailer"><Zap size={10} /> RE</span>}
+                                        {item.isDSO && <span style={{...pocStyles.badge, backgroundColor: '#f3e5f5', color: '#4a148c', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.65rem'}} title="DSO"><TowerControl size={10} /> DSO</span>}
                                     </div>
                                 </td>
                                 <td style={{...pocStyles.td, textAlign: 'center'}}>
                                     <div style={{display:'flex', alignItems:'center', justifyContent:'center', gap:'6px', fontWeight: item.count > 0 ? 700 : 400, color: item.count > 0 ? '#172b4d' : '#6b778c'}}>
-                                        <Box size={14} color={item.count > 0 ? "#0052cc" : "#6b778c"} />
+                                        <Box size={14} color="#0052cc" />
                                         {item.count.toLocaleString()}
                                     </div>
                                 </td>
@@ -147,33 +140,13 @@ export const FirRegResponsibleList: React.FC<Props> = ({ onSelect }) => {
                     </tbody>
                 </table>
                 <div style={{padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #ebecf0', backgroundColor: '#fafbfc'}}>
-                    <span style={{fontSize: '0.85rem', color: '#6b778c'}}>
-                        Showing {pagedItems.length} of {filtered.length} authorized entities
-                    </span>
+                    <span style={{fontSize: '0.85rem', color: '#6b778c'}}>Showing {pagedItems.length} of {filtered.length} authorized entities</span>
                     <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-                        <button 
-                            disabled={currentPage === 0} 
-                            onClick={() => setCurrentPage(p => p - 1)} 
-                            style={{
-                                padding: '6px', borderRadius: '4px', border: '1px solid #dfe1e6', 
-                                backgroundColor: currentPage === 0 ? '#f4f5f7' : '#fff',
-                                cursor: currentPage === 0 ? 'not-allowed' : 'pointer'
-                            }}
-                        >
+                        <button disabled={currentPage === 0} onClick={() => setCurrentPage(p => p - 1)} style={{padding: '6px', borderRadius: '4px', border: '1px solid #dfe1e6', backgroundColor: currentPage === 0 ? '#f4f5f7' : '#fff', cursor: currentPage === 0 ? 'not-allowed' : 'pointer'}}>
                             <ChevronLeft size={16} color={currentPage === 0 ? '#a5adba' : '#42526e'} />
                         </button>
-                        <span style={{fontSize: '0.85rem', fontWeight: 600, color: '#172b4d', margin: '0 8px'}}>
-                            Page {currentPage + 1} of {totalPages || 1}
-                        </span>
-                        <button 
-                            disabled={currentPage >= totalPages - 1} 
-                            onClick={() => setCurrentPage(p => p + 1)} 
-                            style={{
-                                padding: '6px', borderRadius: '4px', border: '1px solid #dfe1e6', 
-                                backgroundColor: currentPage >= totalPages - 1 ? '#f4f5f7' : '#fff',
-                                cursor: currentPage >= totalPages - 1 ? 'not-allowed' : 'pointer'
-                            }}
-                        >
+                        <span style={{fontSize: '0.85rem', fontWeight: 600, color: '#172b4d', margin: '0 8px'}}>Page {currentPage + 1} of {totalPages || 1}</span>
+                        <button disabled={currentPage >= totalPages - 1} onClick={() => setCurrentPage(p => p + 1)} style={{padding: '6px', borderRadius: '4px', border: '1px solid #dfe1e6', backgroundColor: currentPage >= totalPages - 1 ? '#f4f5f7' : '#fff', cursor: currentPage >= totalPages - 1 ? 'not-allowed' : 'pointer'}}>
                             <ChevronRight size={16} color={currentPage >= totalPages - 1 ? '#a5adba' : '#42526e'} />
                         </button>
                     </div>
@@ -183,8 +156,7 @@ export const FirRegResponsibleList: React.FC<Props> = ({ onSelect }) => {
             <div style={{marginTop: '24px', padding: '16px', backgroundColor: '#f9f8ff', borderRadius: '8px', border: '1px solid #e1bee7', display: 'flex', gap: '12px'}}>
                 <Settings size={20} color="#4a148c" style={{flexShrink: 0}} />
                 <p style={{margin: 0, fontSize: '0.85rem', color: '#4a148c'}}>
-                    <strong>CU Registration Responsible (CURR)</strong> is the role responsible for the technical registration and decommissioning of units. 
-                    While most Service Providers (SP) handle this themselves, dedicated technical consultants or installers can also be authorized for this specific role.
+                    <strong>CU Registration Responsible (CURR)</strong> is the role responsible for the technical registration and decommissioning of units. While most Service Providers (SP) handle this themselves, dedicated technical consultants or installers can also be authorized for this specific role.
                 </p>
             </div>
         </div>

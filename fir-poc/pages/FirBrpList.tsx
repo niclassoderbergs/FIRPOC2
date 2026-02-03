@@ -1,8 +1,8 @@
 
 import React, { useState, useMemo } from 'react';
 import { pocStyles } from '../styles';
-import { Users, Search, Filter, Globe, ChevronLeft, ChevronRight } from 'lucide-react';
-import { mockDSOs, mockREs, mockBRPs, mockBSPs } from '../mockData';
+import { Users, Search, Filter, Globe, ChevronLeft, ChevronRight, Briefcase, Zap, TowerControl, UserPlus, ShieldCheck } from 'lucide-react';
+import { mockDSOs, mockREs, mockBRPs, mockBSPs, mockSPs, mockRegResponsibles } from '../mockData';
 
 const PAGE_SIZE = 20;
 
@@ -14,18 +14,29 @@ export const FirBrpList: React.FC<Props> = ({ onSelect }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(0);
 
-    const sortedData = useMemo(() => {
-        return [...mockBRPs].sort((a, b) => a.name.localeCompare(b.name));
+    const processedBRPs = useMemo(() => {
+        return mockBRPs.map(brp => {
+            const name = brp.name;
+            return {
+                ...brp,
+                isREG: mockRegResponsibles.some(r => r.name === name),
+                isSP: mockSPs.some(s => s.name === name),
+                isRE: mockREs.some(r => r.name === name),
+                isBSP: mockBSPs.some(s => s.name === name),
+                isDSO: mockDSOs.some(d => d.name === name),
+                isBRP: true
+            };
+        }).sort((a, b) => a.name.localeCompare(b.name));
     }, []);
 
     const filteredBRPs = useMemo(() => {
         const lower = searchTerm.toLowerCase();
-        return sortedData.filter(brp => 
+        return processedBRPs.filter(brp => 
             brp.name.toLowerCase().includes(lower) || 
             brp.code.toLowerCase().includes(lower) ||
             brp.businessId.toLowerCase().includes(lower)
         );
-    }, [searchTerm, sortedData]);
+    }, [searchTerm, processedBRPs]);
 
     const totalPages = Math.ceil(filteredBRPs.length / PAGE_SIZE);
     const pagedItems = filteredBRPs.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);
@@ -67,94 +78,65 @@ export const FirBrpList: React.FC<Props> = ({ onSelect }) => {
                     <thead style={{backgroundColor: '#fafbfc'}}>
                         <tr>
                             <th style={pocStyles.th}>BRP Name</th>
-                            <th style={pocStyles.th}>Identified Roles</th>
+                            <th style={{...pocStyles.th, width: '35%'}}>Identified Roles</th>
                             <th style={pocStyles.th}>BRP Code</th>
-                            <th style={pocStyles.th}>Scheme</th>
                             <th style={pocStyles.th}>Business ID / OrgNr</th>
                             <th style={pocStyles.th}>Country</th>
                             <th style={pocStyles.th}>Status</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {pagedItems.map((brp, idx) => {
-                            const name = brp.name;
-                            const isDSO = mockDSOs.some(d => d.name === name);
-                            const isRE = mockREs.some(r => r.name === name);
-                            const isBSP = mockBSPs.some(s => s.name === name);
-
-                            return (
-                                <tr 
-                                    key={idx} 
-                                    style={{...pocStyles.row, backgroundColor: idx % 2 === 1 ? '#fafbfc' : '#fff'}}
-                                    onClick={() => onSelect(brp.name)}
-                                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f4f7fb'}
-                                    onMouseLeave={e => e.currentTarget.style.backgroundColor = idx % 2 === 1 ? '#fafbfc' : '#fff'}
-                                >
-                                    <td style={{...pocStyles.td, fontWeight: 600}}>
-                                        <div style={{display:'flex', alignItems:'center', gap:'8px'}}>
-                                            <Users size={16} color="#4b2c85" />
-                                            <span style={{ color: '#0052cc', cursor: 'pointer', textDecoration: 'underline' }}>
-                                                {brp.name}
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td style={pocStyles.td}>
-                                        <div style={{display:'flex', gap:'4px'}}>
-                                            <span style={{...pocStyles.badge, backgroundColor: '#e8f5e9', color: '#1b5e20', fontSize: '0.65rem'}} title="BRP">BRP</span>
-                                            {isBSP && <span style={{...pocStyles.badge, backgroundColor: '#e6effc', color: '#0052cc', fontSize: '0.65rem'}} title="Balance Service Provider">BSP</span>}
-                                            {isDSO && <span style={{...pocStyles.badge, backgroundColor: '#f3e5f5', color: '#4a148c', fontSize: '0.65rem'}} title="DSO">DSO</span>}
-                                            {isRE && <span style={{...pocStyles.badge, backgroundColor: '#fff3e0', color: '#e65100', fontSize: '0.65rem'}} title="Retailer">RE</span>}
-                                        </div>
-                                    </td>
-                                    <td style={{...pocStyles.td, fontFamily: 'monospace'}}>{brp.code}</td>
-                                    <td style={pocStyles.td}>
-                                        <span style={{...pocStyles.badge, fontSize: '0.7rem'}}>{brp.scheme}</span>
-                                    </td>
-                                    <td style={{...pocStyles.td, color: '#42526e', fontSize: '0.85rem'}}>{brp.businessId}</td>
-                                    <td style={pocStyles.td}>
-                                        <div style={{display:'flex', alignItems:'center', gap:'6px'}}>
-                                            <Globe size={14} color="#6b778c" />
-                                            {brp.country}
-                                        </div>
-                                    </td>
-                                    <td style={pocStyles.td}>
-                                        <span style={{...pocStyles.badge, ...pocStyles.badgeGreen}}>Active</span>
-                                    </td>
-                                </tr>
-                            );
-                        })}
+                        {pagedItems.map((brp, idx) => (
+                            <tr 
+                                key={idx} 
+                                style={{...pocStyles.row, backgroundColor: idx % 2 === 1 ? '#fafbfc' : '#fff'}}
+                                onClick={() => onSelect(brp.name)}
+                                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f4f7fb'}
+                                onMouseLeave={e => e.currentTarget.style.backgroundColor = idx % 2 === 1 ? '#fafbfc' : '#fff'}
+                            >
+                                <td style={{...pocStyles.td, fontWeight: 600}}>
+                                    <div style={{display:'flex', alignItems:'center', gap:'8px'}}>
+                                        <Users size={16} color="#4b2c85" />
+                                        <span style={{ color: '#0052cc', cursor: 'pointer', textDecoration: 'underline' }}>
+                                            {brp.name}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td style={pocStyles.td}>
+                                    <div style={{display:'flex', gap:'4px', flexWrap: 'wrap'}}>
+                                        <span style={{...pocStyles.badge, backgroundColor: '#e8f5e9', color: '#1b5e20', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.65rem'}} title="Balance Responsible">
+                                            <Briefcase size={10} /> BRP
+                                        </span>
+                                        {brp.isBSP && <span style={{...pocStyles.badge, backgroundColor: '#deebff', color: '#0747a6', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.65rem'}} title="Balance Service Provider"><Briefcase size={10} /> BSP</span>}
+                                        {brp.isSP && <span style={{...pocStyles.badge, backgroundColor: '#e6fffa', color: '#006d5b', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.65rem'}} title="Service Provider"><ShieldCheck size={10} /> SP</span>}
+                                        {brp.isRE && <span style={{...pocStyles.badge, backgroundColor: '#fff3e0', color: '#e65100', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.65rem'}} title="Retailer"><Zap size={10} /> RE</span>}
+                                        {brp.isREG && <span style={{...pocStyles.badge, backgroundColor: '#f3e5f5', color: '#4a148c', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.65rem'}} title="Registration Responsible"><UserPlus size={10} /> CU REG RESP</span>}
+                                        {brp.isDSO && <span style={{...pocStyles.badge, backgroundColor: '#f3e5f5', color: '#4a148c', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.65rem'}} title="DSO"><TowerControl size={10} /> DSO</span>}
+                                    </div>
+                                </td>
+                                <td style={{...pocStyles.td, fontFamily: 'monospace'}}>{brp.code}</td>
+                                <td style={{...pocStyles.td, color: '#42526e', fontSize: '0.85rem'}}>{brp.businessId}</td>
+                                <td style={pocStyles.td}>
+                                    <div style={{display:'flex', alignItems:'center', gap:'6px'}}>
+                                        <Globe size={14} color="#6b778c" />
+                                        {brp.country}
+                                    </div>
+                                </td>
+                                <td style={pocStyles.td}>
+                                    <span style={{...pocStyles.badge, ...pocStyles.badgeGreen}}>Active</span>
+                                </td>
+                            </tr>
+                        ))}
                     </tbody>
                 </table>
-
-                {/* Pagination Controls */}
                 <div style={{padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #ebecf0', backgroundColor: '#fafbfc'}}>
-                    <span style={{fontSize: '0.85rem', color: '#6b778c'}}>
-                        Showing {pagedItems.length} of {filteredBRPs.length} parties
-                    </span>
+                    <span style={{fontSize: '0.85rem', color: '#6b778c'}}>Showing {pagedItems.length} of {filteredBRPs.length} parties</span>
                     <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-                        <button 
-                            disabled={currentPage === 0}
-                            onClick={() => setCurrentPage(p => p - 1)}
-                            style={{
-                                padding: '6px', borderRadius: '4px', border: '1px solid #dfe1e6', 
-                                backgroundColor: currentPage === 0 ? '#f4f5f7' : '#fff',
-                                cursor: currentPage === 0 ? 'not-allowed' : 'pointer'
-                            }}
-                        >
+                        <button disabled={currentPage === 0} onClick={() => setCurrentPage(p => p - 1)} style={{padding: '6px', borderRadius: '4px', border: '1px solid #dfe1e6', backgroundColor: currentPage === 0 ? '#f4f5f7' : '#fff', cursor: currentPage === 0 ? 'not-allowed' : 'pointer'}}>
                             <ChevronLeft size={16} color={currentPage === 0 ? '#a5adba' : '#42526e'} />
                         </button>
-                        <span style={{fontSize: '0.85rem', fontWeight: 600, color: '#172b4d', margin: '0 8px'}}>
-                            Page {currentPage + 1} of {totalPages || 1}
-                        </span>
-                        <button 
-                            disabled={currentPage >= totalPages - 1}
-                            onClick={() => setCurrentPage(p => p + 1)}
-                            style={{
-                                padding: '6px', borderRadius: '4px', border: '1px solid #dfe1e6', 
-                                backgroundColor: currentPage >= totalPages - 1 ? '#f4f5f7' : '#fff',
-                                cursor: currentPage >= totalPages - 1 ? 'not-allowed' : 'pointer'
-                            }}
-                        >
+                        <span style={{fontSize: '0.85rem', fontWeight: 600, color: '#172b4d', margin: '0 8px'}}>Page {currentPage + 1} of {totalPages || 1}</span>
+                        <button disabled={currentPage >= totalPages - 1} onClick={() => setCurrentPage(p => p + 1)} style={{padding: '6px', borderRadius: '4px', border: '1px solid #dfe1e6', backgroundColor: currentPage >= totalPages - 1 ? '#f4f5f7' : '#fff', cursor: currentPage >= totalPages - 1 ? 'not-allowed' : 'pointer'}}>
                             <ChevronRight size={16} color={currentPage >= totalPages - 1 ? '#a5adba' : '#42526e'} />
                         </button>
                     </div>

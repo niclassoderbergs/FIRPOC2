@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { pocStyles } from '../styles';
-import { Search, Filter, Plus, Link2, ExternalLink, Info, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Filter, Plus, Link2, ExternalLink, Info, ChevronLeft, ChevronRight, ShieldAlert, AlertTriangle } from 'lucide-react';
 import { mockCUs, mockSPGs } from '../mockData';
 
 const PAGE_SIZE = 20;
@@ -21,12 +21,24 @@ const styles = {
         alignItems: 'center',
         borderTop: '1px solid #ebecf0',
         backgroundColor: '#fafbfc'
+    },
+    unassignedHeader: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        marginTop: '48px',
+        marginBottom: '16px',
+        padding: '12px 16px',
+        backgroundColor: '#fff1f0',
+        borderRadius: '8px',
+        border: '1px solid #ffa39e'
     }
 };
 
 export const FirCUList: React.FC<Props> = ({ onSelect, onSelectSPG, onSelectParty, onNavigateToParties }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(0);
+    const [unassignedPage, setUnassignedPage] = useState(0);
 
     const filteredCUs = useMemo(() => {
         const lower = searchTerm.toLowerCase();
@@ -37,14 +49,24 @@ export const FirCUList: React.FC<Props> = ({ onSelect, onSelectSPG, onSelectPart
         );
     }, [searchTerm]);
 
+    const unassignedCUs = useMemo(() => {
+        return mockCUs.filter(cu => !cu.sp || cu.sp.trim() === '');
+    }, []);
+
     const totalPages = Math.ceil(filteredCUs.length / PAGE_SIZE);
     const pagedCUs = useMemo(() => 
         filteredCUs.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE)
     , [currentPage, filteredCUs]);
 
+    const totalUnassignedPages = Math.ceil(unassignedCUs.length / PAGE_SIZE);
+    const pagedUnassigned = useMemo(() =>
+        unassignedCUs.slice(unassignedPage * PAGE_SIZE, (unassignedPage + 1) * PAGE_SIZE)
+    , [unassignedPage, unassignedCUs]);
+
     const handleSearch = (val: string) => {
         setSearchTerm(val);
         setCurrentPage(0);
+        setUnassignedPage(0);
     };
 
     return (
@@ -81,6 +103,7 @@ export const FirCUList: React.FC<Props> = ({ onSelect, onSelectSPG, onSelectPart
                 </button>
             </div>
 
+            {/* MAIN LIST SECTION */}
             <div style={{...pocStyles.section, padding: 0, overflow: 'hidden'}}>
                 <table style={pocStyles.table}>
                     <thead style={{backgroundColor: '#fafbfc'}}>
@@ -91,12 +114,13 @@ export const FirCUList: React.FC<Props> = ({ onSelect, onSelectSPG, onSelectPart
                             <th style={pocStyles.th}>Capacity</th>
                             <th style={pocStyles.th}>Group (SPG)</th>
                             <th style={pocStyles.th}>Status</th>
-                            <th style={pocStyles.th}>SP/BSP</th>
+                            <th style={pocStyles.th}>SP</th>
                         </tr>
                     </thead>
                     <tbody>
                         {pagedCUs.map((item, idx) => {
                             const spg = mockSPGs.find(s => s.id === item.spgId);
+                            const hasNoSp = !item.sp || item.sp.trim() === '';
                             
                             return (
                                 <tr 
@@ -136,23 +160,29 @@ export const FirCUList: React.FC<Props> = ({ onSelect, onSelectSPG, onSelectPart
                                         </span>
                                     </td>
                                     <td style={pocStyles.td}>
-                                        <div 
-                                            style={{
-                                                fontSize: '0.8rem', 
-                                                color: '#0052cc', 
-                                                cursor: 'pointer',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '4px'
-                                            }} 
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                onSelectParty(item.sp);
-                                            }}
-                                        >
-                                            <ExternalLink size={10} />
-                                            {item.sp.length > 20 ? item.sp.substring(0, 18) + '...' : item.sp}
-                                        </div>
+                                        {hasNoSp ? (
+                                            <span style={{...pocStyles.badge, backgroundColor: '#fff1f0', color: '#cf1322', display: 'inline-flex', alignItems: 'center', gap: '4px'}}>
+                                                <AlertTriangle size={10} /> NO SP
+                                            </span>
+                                        ) : (
+                                            <div 
+                                                style={{
+                                                    fontSize: '0.8rem', 
+                                                    color: '#0052cc', 
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '4px'
+                                                }} 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onSelectParty(item.sp);
+                                                }}
+                                            >
+                                                <ExternalLink size={10} />
+                                                {item.sp.length > 20 ? item.sp.substring(0, 18) + '...' : item.sp}
+                                            </div>
+                                        )}
                                     </td>
                                 </tr>
                             );
@@ -160,7 +190,6 @@ export const FirCUList: React.FC<Props> = ({ onSelect, onSelectSPG, onSelectPart
                     </tbody>
                 </table>
 
-                {/* Pagination Controls */}
                 <div style={styles.paginationContainer}>
                     <span style={{fontSize: '0.85rem', color: '#6b778c'}}>
                         Showing {pagedCUs.length} of {filteredCUs.length} units
@@ -190,6 +219,93 @@ export const FirCUList: React.FC<Props> = ({ onSelect, onSelectSPG, onSelectPart
                             }}
                         >
                             <ChevronRight size={16} color={currentPage >= totalPages - 1 ? '#a5adba' : '#42526e'} />
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* UNASSIGNED SECTION */}
+            <div style={styles.unassignedHeader}>
+                <ShieldAlert size={24} color="#cf1322" />
+                <div>
+                    <h2 style={{margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#820014'}}>Action Required: Resources Lacking Service Provider</h2>
+                    <p style={{margin: 0, fontSize: '0.85rem', color: '#a8071a'}}>
+                        These <strong>{unassignedCUs.length}</strong> resources are registered but lack a commercial agreement with a Service Provider.
+                    </p>
+                </div>
+            </div>
+
+            <div style={{...pocStyles.section, padding: 0, overflow: 'hidden'}}>
+                <table style={pocStyles.table}>
+                    <thead style={{backgroundColor: '#fff1f0'}}>
+                        <tr>
+                            <th style={{...pocStyles.th, color: '#820014'}}>CU ID</th>
+                            <th style={{...pocStyles.th, color: '#820014'}}>Name</th>
+                            <th style={{...pocStyles.th, color: '#820014'}}>Type</th>
+                            <th style={{...pocStyles.th, color: '#820014'}}>Capacity</th>
+                            <th style={{...pocStyles.th, color: '#820014'}}>Grid Owner</th>
+                            <th style={{...pocStyles.th, color: '#820014'}}>Registration Responsible</th>
+                            <th style={{...pocStyles.th, color: '#820014', textAlign: 'right'}}>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {pagedUnassigned.map((item, idx) => (
+                            <tr 
+                                key={item.id} 
+                                style={{...pocStyles.row, backgroundColor: idx % 2 === 1 ? '#fff9f9' : '#fff'}}
+                                onClick={() => onSelect(item.id)}
+                            >
+                                <td style={{...pocStyles.td, fontWeight: 600, color: '#cf1322'}}>{item.id}</td>
+                                <td style={{...pocStyles.td, fontWeight: 500}}>{item.name}</td>
+                                <td style={pocStyles.td}>{item.type}</td>
+                                <td style={pocStyles.td}>{item.capacity} {item.capacityUnit}</td>
+                                <td style={pocStyles.td}>{item.gridOwner}</td>
+                                <td style={pocStyles.td}>
+                                    <div 
+                                        style={{display: 'flex', alignItems: 'center', gap: '4px', color: '#0052cc', cursor: 'pointer', fontSize: '0.85rem'}}
+                                        onClick={(e) => { e.stopPropagation(); onSelectParty(item.registrationResponsible); }}
+                                    >
+                                        <ExternalLink size={10} />
+                                        {item.registrationResponsible}
+                                    </div>
+                                </td>
+                                <td style={{...pocStyles.td, textAlign: 'right'}}>
+                                    <span style={{...pocStyles.badge, backgroundColor: '#ffd666', color: '#874d00'}}>UNLINKED</span>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+
+                <div style={styles.paginationContainer}>
+                    <span style={{fontSize: '0.85rem', color: '#6b778c'}}>
+                        Showing {pagedUnassigned.length} of {unassignedCUs.length} unassigned units
+                    </span>
+                    <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+                        <button 
+                            disabled={unassignedPage === 0}
+                            onClick={() => setUnassignedPage(p => p - 1)}
+                            style={{
+                                padding: '6px', borderRadius: '4px', border: '1px solid #ffa39e', 
+                                backgroundColor: unassignedPage === 0 ? '#fff1f0' : '#fff',
+                                cursor: unassignedPage === 0 ? 'not-allowed' : 'pointer'
+                            }}
+                        >
+                            <ChevronLeft size={16} color={unassignedPage === 0 ? '#ffa39e' : '#cf1322'} />
+                        </button>
+                        <span style={{fontSize: '0.85rem', fontWeight: 600, color: '#820014', margin: '0 8px'}}>
+                            Page {unassignedPage + 1} of {totalUnassignedPages || 1}
+                        </span>
+                        <button 
+                            disabled={unassignedPage >= totalUnassignedPages - 1}
+                            onClick={() => setUnassignedPage(p => p + 1)}
+                            style={{
+                                padding: '6px', borderRadius: '4px', border: '1px solid #ffa39e', 
+                                backgroundColor: unassignedPage >= totalUnassignedPages - 1 ? '#fff1f0' : '#fff',
+                                cursor: unassignedPage >= totalUnassignedPages - 1 ? 'not-allowed' : 'pointer'
+                            }}
+                        >
+                            <ChevronRight size={16} color={unassignedPage >= totalUnassignedPages - 1 ? '#ffa39e' : '#cf1322'} />
                         </button>
                     </div>
                 </div>

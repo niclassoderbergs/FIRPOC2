@@ -28,5 +28,19 @@ export const mockBSPs = [
   { name: 'Varberg Energimarknad AB', code: '36810', scheme: 'NSE', businessId: '556524-3010', country: 'SE' },
   { name: 'Vattenfall AB', code: '11000', scheme: 'NSE', businessId: '556036-2138', country: 'SE' },
   { name: 'Vimab BESS AB', code: '17150', scheme: 'NSE', businessId: '556760-0175', country: 'SE' },
-  { name: 'Volue Energy Market Services Sverige Filial', code: '42500', scheme: 'NSE', businessId: '516404-8950', country: 'SE' }
+  { name: 'Volue Energy Market Services Sverige Filial', code: '42500', scheme: 'NSE', businessId: '516404-8950', country: 'SE' },
+  
+  // --- Independent Aggregators (BSP + SP + CURR, No BRP/RE role) ---
+  { name: 'Nordic Grid Solutions', code: '81141', scheme: 'NSE', businessId: '559000-0001', country: 'SE' },
+  { name: 'Volt Reserve AB', code: '81142', scheme: 'NSE', businessId: '559000-0002', country: 'SE' },
+  { name: 'Flex Dynamics Oy', code: '6429830170010', scheme: 'GS1', businessId: 'FI3268277-2', country: 'SE' },
+  { name: 'Aggregated Energy Services', code: '81143', scheme: 'NSE', businessId: '559000-0003', country: 'SE' },
+  { name: 'Smart Response SE', code: '81144', scheme: 'NSE', businessId: '559000-0004', country: 'SE' },
+  { name: 'Virtual Power Hub', code: '81145', scheme: 'NSE', businessId: '559000-0005', country: 'SE' },
+  { name: 'Grid Stability Partners', code: '81146', scheme: 'NSE', businessId: '559000-0006', country: 'SE' },
+  { name: 'Active Load Management', code: '81147', scheme: 'NSE', businessId: '559000-0007', country: 'SE' },
+  { name: 'Pulse Flexibility AB', code: '81148', scheme: 'NSE', businessId: '559000-0008', country: 'SE' },
+  { name: 'Demand Side Tech', code: '81149', scheme: 'NSE', businessId: '559000-0009', country: 'SE' },
+  { name: 'FreqControl Nordic', code: '81150', scheme: 'NSE', businessId: '559000-0010', country: 'SE' },
+  { name: 'Smarter Grid Assets', code: '81151', scheme: 'NSE', businessId: '559000-0011', country: 'SE' }
 ];

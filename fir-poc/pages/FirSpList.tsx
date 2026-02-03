@@ -1,8 +1,8 @@
 
 import React, { useState, useMemo } from 'react';
 import { pocStyles } from '../styles';
-import { Search, Filter, ShieldCheck, Globe, Info, ChevronLeft, ChevronRight, UserCheck } from 'lucide-react';
-import { mockSPs, mockBSPs, mockREs, mockBRPs, mockCUs } from '../mockData';
+import { Search, Filter, ShieldCheck, Globe, Info, ChevronLeft, ChevronRight, UserCheck, Briefcase, Zap, TowerControl, UserPlus } from 'lucide-react';
+import { mockSPs, mockBSPs, mockREs, mockBRPs, mockDSOs, mockRegResponsibles, mockCUs } from '../mockData';
 
 const PAGE_SIZE = 20;
 
@@ -11,24 +11,22 @@ interface Props {
 }
 
 export const FirSpList: React.FC<Props> = ({ onSelect }) => {
-    // ORDAGRANT: Ändrat från hårdkodat ID till null för att visa tabellen initialt
-    const [selectedId, setSelectedId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(0);
 
-    // Process the SP mock data to add context and roles
-    const allSPsProcessed = useMemo(() => {
+    const processedSPs = useMemo(() => {
         return mockSPs.map(sp => {
-            const isBSP = mockBSPs.some(b => b.name === sp.name);
-            const resourceCount = mockCUs.filter(cu => cu.sp === sp.name).length;
-            const isRE = mockREs.some(r => r.name === sp.name);
-            const isBRP = mockBRPs.some(br => br.name === sp.name);
+            const name = sp.name;
+            const resourceCount = mockCUs.filter(cu => cu.sp === name).length;
 
             return {
                 ...sp,
-                isBSP,
-                isRE,
-                isBRP,
+                isREG: mockRegResponsibles.some(r => r.name === name),
+                isBSP: mockBSPs.some(b => b.name === name),
+                isDSO: mockDSOs.some(d => d.name === name),
+                isRE: mockREs.some(r => r.name === name),
+                isBRP: mockBRPs.some(br => br.name === name),
+                isSP: true,
                 resourceCount
             };
         }).sort((a, b) => a.name.localeCompare(b.name));
@@ -36,12 +34,12 @@ export const FirSpList: React.FC<Props> = ({ onSelect }) => {
 
     const filteredSPs = useMemo(() => {
         const lower = searchTerm.toLowerCase();
-        return allSPsProcessed.filter(sp => 
+        return processedSPs.filter(sp => 
             sp.name.toLowerCase().includes(lower) || 
             (sp.code && sp.code.toLowerCase().includes(lower)) ||
             (sp.businessId && sp.businessId.toLowerCase().includes(lower))
         );
-    }, [searchTerm, allSPsProcessed]);
+    }, [searchTerm, processedSPs]);
 
     const totalPages = Math.ceil(filteredSPs.length / PAGE_SIZE);
     const pagedItems = filteredSPs.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);
@@ -50,17 +48,6 @@ export const FirSpList: React.FC<Props> = ({ onSelect }) => {
         setSearchTerm(val);
         setCurrentPage(0);
     };
-
-    // Om selectedId mot förmodan skulle vara satt, kan vi hantera intern detaljvy här, 
-    // men vi förlitar oss primärt på onSelect för global routing.
-    if (selectedId) {
-        return (
-            <div style={pocStyles.content}>
-                <button onClick={() => setSelectedId(null)} style={pocStyles.actionButton}>Back to list</button>
-                <div style={{marginTop: '20px'}}>Internal Detail View for {selectedId}</div>
-            </div>
-        );
-    }
 
     return (
         <div style={pocStyles.content}>
@@ -94,8 +81,8 @@ export const FirSpList: React.FC<Props> = ({ onSelect }) => {
                     <thead style={{backgroundColor: '#fafbfc'}}>
                         <tr>
                             <th style={{...pocStyles.th, width: '30%'}}>SP Actor Name</th>
-                            <th style={{...pocStyles.th, width: '25%'}}>Identified Roles</th>
-                            <th style={{...pocStyles.th, width: '15%', textAlign: 'center'}}>Managed CUs</th>
+                            <th style={{...pocStyles.th, width: '30%'}}>Identified Roles</th>
+                            <th style={{...pocStyles.th, width: '10%', textAlign: 'center'}}>CUs</th>
                             <th style={{...pocStyles.th, width: '15%'}}>Code / EIC</th>
                             <th style={pocStyles.th}>Country</th>
                             <th style={pocStyles.th}>Status</th>
@@ -120,10 +107,14 @@ export const FirSpList: React.FC<Props> = ({ onSelect }) => {
                                 </td>
                                 <td style={pocStyles.td}>
                                     <div style={{display:'flex', gap:'4px', flexWrap: 'wrap'}}>
-                                        <span style={{...pocStyles.badge, backgroundColor: '#e6effc', color: '#0052cc', fontSize: '0.65rem'}} title="Service Provider">SP</span>
-                                        {sp.isBSP && <span style={{...pocStyles.badge, backgroundColor: '#e6effc', color: '#0052cc', fontSize: '0.65rem'}} title="Balance Service Provider">BSP</span>}
-                                        {sp.isRE && <span style={{...pocStyles.badge, backgroundColor: '#fff3e0', color: '#e65100', fontSize: '0.65rem'}} title="Retailer">RE</span>}
-                                        {sp.isBRP && <span style={{...pocStyles.badge, backgroundColor: '#e8f5e9', color: '#1b5e20', fontSize: '0.65rem'}} title="Balance Responsible">BRP</span>}
+                                        <span style={{...pocStyles.badge, backgroundColor: '#e6effc', color: '#0052cc', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.65rem'}} title="Service Provider">
+                                            <ShieldCheck size={10} /> SP
+                                        </span>
+                                        {sp.isBSP && <span style={{...pocStyles.badge, backgroundColor: '#e6effc', color: '#0052cc', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.65rem'}} title="Balance Service Provider"><Briefcase size={10} /> BSP</span>}
+                                        {sp.isREG && <span style={{...pocStyles.badge, backgroundColor: '#f3e5f5', color: '#4a148c', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.65rem'}} title="Registration Responsible"><UserPlus size={10} /> CU REG RESP</span>}
+                                        {sp.isBRP && <span style={{...pocStyles.badge, backgroundColor: '#e8f5e9', color: '#1b5e20', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.65rem'}} title="Balance Responsible"><Briefcase size={10} /> BRP</span>}
+                                        {sp.isRE && <span style={{...pocStyles.badge, backgroundColor: '#fff3e0', color: '#e65100', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.65rem'}} title="Retailer"><Zap size={10} /> RE</span>}
+                                        {sp.isDSO && <span style={{...pocStyles.badge, backgroundColor: '#f3e5f5', color: '#4a148c', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.65rem'}} title="DSO"><TowerControl size={10} /> DSO</span>}
                                     </div>
                                 </td>
                                 <td style={{...pocStyles.td, textAlign: 'center'}}>
@@ -148,36 +139,14 @@ export const FirSpList: React.FC<Props> = ({ onSelect }) => {
                         ))}
                     </tbody>
                 </table>
-                
-                {/* Pagination Controls */}
                 <div style={{padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #ebecf0', backgroundColor: '#fafbfc'}}>
-                    <span style={{fontSize: '0.85rem', color: '#6b778c'}}>
-                        Showing {pagedItems.length} of {filteredSPs.length} results
-                    </span>
+                    <span style={{fontSize: '0.85rem', color: '#6b778c'}}>Showing {pagedItems.length} of {filteredSPs.length} results</span>
                     <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-                        <button 
-                            disabled={currentPage === 0}
-                            onClick={() => setCurrentPage(p => p - 1)}
-                            style={{
-                                padding: '6px', borderRadius: '4px', border: '1px solid #dfe1e6', 
-                                backgroundColor: currentPage === 0 ? '#f4f5f7' : '#fff',
-                                cursor: currentPage === 0 ? 'not-allowed' : 'pointer'
-                            }}
-                        >
+                        <button disabled={currentPage === 0} onClick={() => setCurrentPage(p => p - 1)} style={{padding: '6px', borderRadius: '4px', border: '1px solid #dfe1e6', backgroundColor: currentPage === 0 ? '#f4f5f7' : '#fff', cursor: currentPage === 0 ? 'not-allowed' : 'pointer'}}>
                             <ChevronLeft size={16} color={currentPage === 0 ? '#a5adba' : '#42526e'} />
                         </button>
-                        <span style={{fontSize: '0.85rem', fontWeight: 600, color: '#172b4d', margin: '0 8px'}}>
-                            Page {currentPage + 1} of {totalPages || 1}
-                        </span>
-                        <button 
-                            disabled={currentPage >= totalPages - 1}
-                            onClick={() => setCurrentPage(p => p + 1)}
-                            style={{
-                                padding: '6px', borderRadius: '4px', border: '1px solid #dfe1e6', 
-                                backgroundColor: currentPage >= totalPages - 1 ? '#f4f5f7' : '#fff',
-                                cursor: currentPage >= totalPages - 1 ? 'not-allowed' : 'pointer'
-                            }}
-                        >
+                        <span style={{fontSize: '0.85rem', fontWeight: 600, color: '#172b4d', margin: '0 8px'}}>Page {currentPage + 1} of {totalPages || 1}</span>
+                        <button disabled={currentPage >= totalPages - 1} onClick={() => setCurrentPage(p => p + 1)} style={{padding: '6px', borderRadius: '4px', border: '1px solid #dfe1e6', backgroundColor: currentPage >= totalPages - 1 ? '#f4f5f7' : '#fff', cursor: currentPage >= totalPages - 1 ? 'not-allowed' : 'pointer'}}>
                             <ChevronRight size={16} color={currentPage >= totalPages - 1 ? '#a5adba' : '#42526e'} />
                         </button>
                     </div>
@@ -187,8 +156,7 @@ export const FirSpList: React.FC<Props> = ({ onSelect }) => {
             <div style={{marginTop: '24px', padding: '16px', backgroundColor: '#f0f7ff', borderRadius: '8px', border: '1px solid #b3d4ff', display: 'flex', gap: '12px'}}>
                 <Info size={20} color="#0052cc" style={{flexShrink: 0}} />
                 <p style={{margin: 0, fontSize: '0.85rem', color: '#172b4d'}}>
-                    <strong>Service Providers (SP)</strong> are responsible for managing the commercial agreements with resource owners. 
-                    They act as the primary interface between the technical resource (CU) and the commercial market aggregation (SPG/SPU).
+                    <strong>Service Providers (SP)</strong> are responsible for managing the commercial agreements with resource owners. They act as the primary interface between the technical resource (CU) and the commercial market aggregation (SPG/SPU).
                 </p>
             </div>
         </div>

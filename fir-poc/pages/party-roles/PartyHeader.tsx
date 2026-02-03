@@ -16,14 +16,14 @@ export const PartyHeader: React.FC<Props> = ({ partyName, roles, onBack }) => {
         <div>
           <h1 style={{ ...pocStyles.pageTitle, marginBottom: '12px' }}>{partyName}</h1>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            {roles.isSP && (
-              <span style={{ ...pocStyles.badge, backgroundColor: '#e6effc', color: '#0052cc', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                <ShieldCheck size={12} /> Service Provider (SP)
+            {roles.isBSP && (
+              <span style={{ ...pocStyles.badge, backgroundColor: '#deebff', color: '#0747a6', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <Briefcase size={12} /> Balance Service Provider (BSP)
               </span>
             )}
-            {roles.isBSP && (
-              <span style={{ ...pocStyles.badge, backgroundColor: '#e6effc', color: '#0052cc', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                <Briefcase size={12} /> Balance Service Provider (BSP)
+            {roles.isSP && (
+              <span style={{ ...pocStyles.badge, backgroundColor: '#e6fffa', color: '#006d5b', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <ShieldCheck size={12} /> Service Provider (SP)
               </span>
             )}
             {roles.isREG && (

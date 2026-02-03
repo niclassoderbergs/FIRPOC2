@@ -79,7 +79,8 @@ const styles = {
     color: '#6b778c',
     textTransform: 'uppercase' as const,
     display: 'flex',
-    alignItems: 'center gap: 6px'
+    alignItems: 'center',
+    gap: '6px'
   },
   value: {
     fontSize: '0.95rem',
@@ -94,7 +95,8 @@ const styles = {
   },
   breadcrumb: {
     display: 'flex',
-    alignItems: 'center gap: 8px',
+    alignItems: 'center',
+    gap: '8px',
     fontSize: '0.85rem',
     color: '#5e6c84',
     cursor: 'pointer'
@@ -105,7 +107,8 @@ const styles = {
     cursor: 'pointer',
     fontWeight: 500,
     display: 'flex',
-    alignItems: 'center gap: 6px',
+    alignItems: 'center',
+    gap: '6px',
     width: 'fit-content'
   },
   partyLink: {
@@ -113,11 +116,13 @@ const styles = {
     cursor: 'pointer',
     textDecoration: 'underline',
     display: 'inline-flex',
-    alignItems: 'center gap: 4px'
+    alignItems: 'center',
+    gap: '4px'
   },
   verifiedBadge: {
     display: 'inline-flex',
-    alignItems: 'center gap: 4px',
+    alignItems: 'center',
+    gap: '4px',
     backgroundColor: '#e3fcef',
     color: '#006644',
     padding: '2px 6px',
@@ -128,7 +133,8 @@ const styles = {
   },
   inheritanceNote: {
     display: 'flex',
-    alignItems: 'center gap: 8px',
+    alignItems: 'center',
+    gap: '8px',
     backgroundColor: '#f4f5f7',
     padding: '12px 16px',
     borderRadius: '6px',
@@ -176,7 +182,7 @@ const styles = {
   },
   historyToggle: {
     display: 'flex',
-    alignItems: 'center gap: 8px',
+    alignItems: 'center', gap: '8px',
     background: 'none',
     border: 'none',
     color: '#0052cc',
@@ -187,13 +193,15 @@ const styles = {
     padding: '8px 0'
   },
   historyItem: {
-    display: 'flex gap: 16px',
+    display: 'flex',
+    gap: '16px',
     padding: '12px 0',
     borderBottom: '1px dashed #ebecf0'
   },
   navButton: {
     display: 'flex',
-    alignItems: 'center gap: 6px',
+    alignItems: 'center',
+    gap: '6px',
     padding: '6px 12px',
     backgroundColor: '#fff',
     border: '1px solid #dfe1e6',
@@ -265,7 +273,8 @@ const styles = {
     fontWeight: 600,
     color: '#172b4d',
     display: 'flex',
-    alignItems: 'center gap: 6px'
+    alignItems: 'center',
+    gap: '6px'
   },
   relationGroup: {
     display: 'grid',
@@ -426,8 +435,23 @@ export const FirCUDetail: React.FC<Props> = ({ cu, prevCU, nextCU, onSelectCU, o
     return {};
   };
 
-  // Mätkälla baseras deterministiskt på CU ID för att synka med verifieringsvyn
   const isCuSource = (parseInt(cu.id.split('-').pop() || '0')) % 2 === 0;
+
+  // Shared component for ID display to ensure consistency
+  const IdentityDisplay = ({ id }: { id: string }) => (
+    <div style={{display: 'flex', alignItems: 'center'}}>
+        {id ? (
+            <>
+                <span>{id}</span>
+                <span style={{...styles.verifiedBadge, marginLeft: '8px'}} title="Commercial and Grid ID consistency verified">
+                    <ShieldCheck size={10} /> Verified Sync
+                </span>
+            </>
+        ) : (
+            <span style={{ color: '#6b778c', fontStyle: 'italic' }}>N/A (Unassigned)</span>
+        )}
+    </div>
+  );
 
   return (
     <div style={pocStyles.content}>
@@ -612,14 +636,7 @@ export const FirCUDetail: React.FC<Props> = ({ cu, prevCU, nextCU, onSelectCU, o
                     <Field label="Grid Owner (DSO)" value={<span style={styles.partyLink} onClick={() => onSelectParty(cu.gridOwner)}>{cu.gridOwner} <ExternalLink size={12}/></span>} />
                     <Field label="Electricity Supplier (RE)" value={<span style={styles.partyLink} onClick={() => onSelectParty(cu.re)}>{cu.re} <ExternalLink size={12}/></span>} />
                     <Field label="Balance Responsible (BRP)" value={<span style={styles.partyLink} onClick={() => onSelectParty(cu.brp)}>{cu.brp} <ExternalLink size={12}/></span>} />
-                    <Field label="SSN / ORGNR" value={
-                        <div style={{display: 'flex', alignItems: 'center'}}>
-                            <span>{cu.ownerId}</span>
-                            <span style={{...styles.verifiedBadge, marginLeft: '8px'}} title="Verified against Grid Contract in Datahub">
-                                <ShieldCheck size={10} /> Verified vs DHV
-                            </span>
-                        </div>
-                    } />
+                    <Field label="SSN / ORGNR" value={<IdentityDisplay id={cu.ownerId} />} />
                 </div>
             </div>
 
@@ -630,8 +647,14 @@ export const FirCUDetail: React.FC<Props> = ({ cu, prevCU, nextCU, onSelectCU, o
                 </div>
                 <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
                     <Field label="CU Registration Responsible" value={<span style={{...styles.partyLink, color: '#4a148c'}} onClick={() => onSelectParty(cu.registrationResponsible)}>{cu.registrationResponsible} <UserPlus size={12}/></span>} />
-                    <Field label="Service Provider" value={<span style={{...styles.partyLink, color: '#4a148c'}} onClick={() => onSelectParty(cu.sp)}>{cu.sp} <ExternalLink size={12}/></span>} />
-                    <Field label="SSN / ORGNR" value={<span>{cu.ownerId}</span>} />
+                    <Field label="Service Provider" value={
+                        cu.sp ? (
+                            <span style={{...styles.partyLink, color: '#4a148c'}} onClick={() => onSelectParty(cu.sp)}>{cu.sp} <ExternalLink size={12}/></span>
+                        ) : (
+                            <span style={{ color: '#d97706', fontWeight: 600 }}>UNASSIGNED</span>
+                        )
+                    } />
+                    <Field label="SSN / ORGNR" value={<IdentityDisplay id={cu.ownerId} />} />
                     <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px'}}>
                         <Field label="Start Date" value={<div style={{display:'flex', alignItems:'center', gap:'4px'}}><Calendar size={14} color="#6b778c"/> {cu.flexStartDate || 'N/A'}</div>} />
                         <Field label="End Date" value={<div style={{display:'flex', alignItems:'center', gap:'4px'}}><Calendar size={14} color="#6b778c"/> {cu.flexEndDate || 'N/A'}</div>} />
@@ -656,7 +679,7 @@ export const FirCUDetail: React.FC<Props> = ({ cu, prevCU, nextCU, onSelectCU, o
                 
                 <div style={{gridColumn: 'span 2'}}>
                     <div style={styles.field}>
-                        <div style={styles.label}>Accounting Point (GSRN) <HelpCircle style={styles.iconSmall} /></div>
+                        <div style={styles.label}>Accounting Point (GSRN) <HelpCircle size={14} color="#a5adba" /></div>
                         <div style={{...styles.value, fontSize: '1.2rem', fontWeight: 700, fontFamily: 'monospace'}}>{cu.accountingPoint}</div>
                         
                         <div style={styles.dhvMasterBox}>
@@ -747,301 +770,139 @@ export const FirCUDetail: React.FC<Props> = ({ cu, prevCU, nextCU, onSelectCU, o
                                         )}
                                     </td>
                                     <td style={pocStyles.td}>
-                                        <span style={{
-                                            ...pocStyles.badge,
-                                            backgroundColor: data.isConfigured ? '#e3fcef' : '#fff0b3',
-                                            color: data.isConfigured ? '#006644' : '#172b4d',
-                                            display: 'flex', alignItems: 'center', gap: '4px', width: 'fit-content'
-                                        }}>
-                                            {data.isConfigured ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />}
-                                            {data.isConfigured ? 'CONFIGURED' : 'MISSING'}
-                                        </span>
+                                        {data.isConfigured ? (
+                                            <span style={{...pocStyles.badge, ...pocStyles.badgeGreen, display: 'flex', alignItems: 'center', gap: '4px', width: 'fit-content'}}>
+                                                <CheckCircle2 size={12} /> Compliant
+                                            </span>
+                                        ) : (
+                                            <span style={{...pocStyles.badge, backgroundColor: '#ffebe6', color: '#bf2600', display: 'flex', alignItems: 'center', gap: '4px', width: 'fit-content'}}>
+                                                <AlertTriangle size={12} /> Configuration missing
+                                            </span>
+                                        )}
                                     </td>
-                                    <td style={{...pocStyles.td, textAlign: 'right'}}>
-                                        <button style={{border: 'none', background: 'none', color: '#0052cc', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600}}>Edit</button>
+                                    <td style={pocStyles.td}>
+                                        <button style={{border: 'none', background: 'none', color: '#0052cc', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem'}}>Manage</button>
                                     </td>
                                 </tr>
                             );
                         })
                     ) : (
                         <tr>
-                            <td colSpan={5} style={{...pocStyles.td, textAlign: 'center', color: '#6b778c', fontStyle: 'italic', padding: '32px'}}>
-                                No products assigned for baseline configuration.
-                            </td>
+                            <td colSpan={5} style={{...pocStyles.td, textAlign: 'center', padding: '32px', color: '#6b778c', fontStyle: 'italic'}}>No product qualifications active for this unit.</td>
                         </tr>
                     )}
                 </tbody>
             </table>
         </div>
 
-        {/* 7. PERFORMANCE & VERIFICATION HISTORY */}
+        {/* 7. RECENT VERIFICATIONS */}
         <div style={pocStyles.section}>
-            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: '16px'}}>
-                <h3 style={{...pocStyles.sectionTitle, marginBottom: 0, borderBottom: 'none'}}>
-                    <CheckCircle2 size={18} style={{marginRight: '8px', verticalAlign: 'middle'}}/> Historical Verifications (Ex-post)
-                </h3>
-                {historicalVerifications.length > VERIFICATION_PAGE_SIZE && (
-                    <span style={{fontSize: '0.8rem', color: '#6b778c'}}>
-                        Showing {pagedVerifications.length} of {historicalVerifications.length} records
-                    </span>
-                )}
-            </div>
-            <p style={{fontSize: '0.85rem', color: '#6b778c', marginBottom: '16px'}}>
-                Performance records for this specific resource. Values are derived from group-level activations and localized metering data.
-            </p>
+            <h3 style={pocStyles.sectionTitle}><CheckCircle2 size={18} style={{marginRight: '8px', verticalAlign: 'middle'}}/> Recent Verifications (Ex-post)</h3>
             <table style={pocStyles.table}>
                 <thead style={{backgroundColor: '#fafbfc'}}>
                     <tr>
                         <th style={pocStyles.th}>Reference</th>
                         <th style={pocStyles.th}>Product</th>
-                        <th style={pocStyles.th}>Period</th>
-                        <th style={pocStyles.th}>Historical Actors</th>
-                        <th style={{...pocStyles.th, textAlign: 'right'}}>Verified Power (MW)</th>
-                        <th style={{...pocStyles.th, textAlign: 'right'}}>Verified Energy (MWh)</th>
+                        <th style={pocStyles.th}>Period / MTU</th>
+                        <th style={{...pocStyles.th, textAlign: 'right'}}>CU Share (MW)</th>
+                        <th style={{...pocStyles.th, textAlign: 'right'}}>Energy (MWh)</th>
                         <th style={{...pocStyles.th, textAlign: 'right'}}>Accuracy</th>
                         <th style={pocStyles.th}></th>
                     </tr>
                 </thead>
                 <tbody>
-                    {pagedVerifications.length > 0 ? (
-                        pagedVerifications.map((v, idx) => {
-                            let resultColor = '#36b37e'; 
-                            if (v.accuracyPct < 98) resultColor = '#ffab00';
-                            if (v.accuracyPct < 90) resultColor = '#bf2600';
-                            if (v.accuracyPct > 102) resultColor = '#403294';
-
-                            return (
-                                <tr key={v.bidId} style={{...pocStyles.row, backgroundColor: idx % 2 === 1 ? '#fafbfc' : '#fff'}}>
-                                    <td 
-                                        style={{...pocStyles.td, fontWeight: 600, color: '#0052cc', textDecoration: 'underline'}}
-                                        onClick={() => onSelectBid(v.bidId)}
-                                    >
-                                        {v.bidId}
-                                    </td>
-                                    <td style={pocStyles.td}>
-                                        <span style={{...pocStyles.badge, ...pocStyles.badgeBlue}}>{v.productId}</span>
-                                    </td>
-                                    <td style={pocStyles.td}>
-                                        <div style={{fontSize: '0.8rem'}}>
-                                            {new Date(v.timestamp).toLocaleDateString()} {v.period}
-                                        </div>
-                                    </td>
-                                    <td style={pocStyles.td}>
-                                        <div style={{display: 'flex', flexDirection: 'column'}}>
-                                            <div style={styles.actorMiniLabel}>
-                                                <Briefcase size={10} color="#0052cc" />
-                                                <span style={{fontWeight: 600}}>BSP:</span> {v.affectedSP}
-                                            </div>
-                                            <div style={styles.actorMiniLabel}>
-                                                <Zap size={10} color="#e65100" />
-                                                <span style={{fontWeight: 600}}>RE:</span> {v.affectedRE}
-                                            </div>
-                                            <div style={styles.actorMiniLabel}>
-                                                <Briefcase size={10} color="#1b5e20" />
-                                                <span style={{fontWeight: 600}}>BRP:</span> {v.affectedBRP}
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td style={{...pocStyles.td, textAlign: 'right', fontWeight: 600}}>
-                                        {v.cuShareMW.toFixed(3)}
-                                    </td>
-                                    <td style={{...pocStyles.td, textAlign: 'right', fontWeight: 700, color: '#0052cc'}}>
-                                        {v.cuEnergyMWh.toFixed(3)}
-                                    </td>
-                                    <td style={{...pocStyles.td, textAlign: 'right'}}>
-                                        <span style={{fontWeight: 800, color: resultColor}}>{v.accuracyPct}%</span>
-                                    </td>
-                                    <td style={{...pocStyles.td, textAlign: 'right'}}>
-                                        <button 
-                                            style={{border:'none', background:'none', color:'#0052cc', cursor:'pointer'}}
-                                            onClick={() => onSelectBid(v.bidId)}
-                                        >
-                                            <FileSearch size={16} />
-                                        </button>
-                                    </td>
-                                </tr>
-                            );
-                        })
-                    ) : (
-                        <tr>
-                            <td colSpan={8} style={{...pocStyles.td, textAlign: 'center', color: '#6b778c', fontStyle: 'italic', padding: '32px'}}>
-                                No historical activation records found for this unit.
+                    {pagedVerifications.length > 0 ? pagedVerifications.map((item, idx) => (
+                        <tr key={item.bidId} style={{...pocStyles.row, backgroundColor: idx % 2 === 1 ? '#fafbfc' : '#fff'}}>
+                            <td style={{...pocStyles.td, fontWeight: 600, color: '#0052cc', textDecoration:'underline'}} onClick={() => onSelectBid(item.bidId)}>{item.bidId}</td>
+                            <td style={pocStyles.td}><span style={{...pocStyles.badge, ...pocStyles.badgeBlue}}>{item.productId}</span></td>
+                            <td style={pocStyles.td}>
+                                <div style={{fontSize: '0.8rem'}}>
+                                    {new Date(item.timestamp).toLocaleDateString()} {item.period}
+                                </div>
                             </td>
+                            <td style={{...pocStyles.td, textAlign: 'right', fontWeight: 600}}>{item.cuShareMW.toFixed(3)}</td>
+                            <td style={{...pocStyles.td, textAlign: 'right', fontWeight: 700, color: '#0052cc'}}>{item.cuEnergyMWh.toFixed(3)}</td>
+                            <td style={{...pocStyles.td, textAlign: 'right', fontWeight: 800, color: item.accuracyPct >= 98 ? '#006644' : '#974f0c'}}>
+                                {item.accuracyPct}%
+                            </td>
+                            <td style={pocStyles.td}>
+                                <button style={{border:'none', background:'none', color:'#0052cc', cursor:'pointer'}} onClick={() => onSelectBid(item.bidId)}>
+                                    <FileSearch size={16} />
+                                </button>
+                            </td>
+                        </tr>
+                    )) : (
+                        <tr>
+                            <td colSpan={7} style={{...pocStyles.td, textAlign: 'center', padding: '32px', color: '#6b778c', fontStyle: 'italic'}}>No verification history for this unit.</td>
                         </tr>
                     )}
                 </tbody>
             </table>
 
-            {historicalVerifications.length > VERIFICATION_PAGE_SIZE && (
+            {totalVerificationPages > 1 && (
                 <div style={styles.paginationContainer}>
-                    <span style={{fontSize: '0.85rem', color: '#6b778c'}}>
-                        Page {verificationPage + 1} of {totalVerificationPages}
-                    </span>
+                    <span style={{fontSize: '0.85rem', color: '#6b778c'}}>Showing {pagedVerifications.length} of {historicalVerifications.length} results</span>
                     <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-                        <button 
-                            disabled={verificationPage === 0}
-                            onClick={() => setVerificationPage(p => p - 1)}
-                            style={{
-                                padding: '4px', borderRadius: '4px', border: '1px solid #dfe1e6', 
-                                backgroundColor: verificationPage === 0 ? '#f4f5f7' : '#fff',
-                                cursor: verificationPage === 0 ? 'not-allowed' : 'pointer'
-                            }}
-                        >
-                            <ChevronLeft size={14} color={verificationPage === 0 ? '#a5adba' : '#403294'} />
-                        </button>
-                        <button 
-                            disabled={verificationPage >= totalVerificationPages - 1}
-                            onClick={() => setVerificationPage(p => p + 1)}
-                            style={{
-                                padding: '4px', borderRadius: '4px', border: '1px solid #dfe1e6', 
-                                backgroundColor: verificationPage >= totalVerificationPages - 1 ? '#f4f5f7' : '#fff',
-                                cursor: verificationPage >= totalVerificationPages - 1 ? 'not-allowed' : 'pointer'
-                            }}
-                        >
-                            <ChevronRight size={14} color={verificationPage >= totalVerificationPages - 1 ? '#a5adba' : '#403294'} />
-                        </button>
+                        <button disabled={verificationPage === 0} onClick={() => setVerificationPage(v => v - 1)} style={styles.navButton}><ChevronLeft size={16}/></button>
+                        <span style={{fontSize: '0.85rem', fontWeight: 600}}>Page {verificationPage + 1} of {totalVerificationPages}</span>
+                        <button disabled={verificationPage >= totalVerificationPages - 1} onClick={() => setVerificationPage(v => v + 1)} style={styles.navButton}><ChevronRight size={16}/></button>
                     </div>
                 </div>
             )}
         </div>
 
-        {/* 8. GRID CONSTRAINTS LOG */}
+        {/* 8. RELATIONSHIP HISTORY */}
         <div style={pocStyles.section}>
-            <h3 style={pocStyles.sectionTitle}>
-                <FileText size={18} style={{marginRight: '8px', verticalAlign: 'middle'}}/> Grid Constraints Log
-            </h3>
-            <table style={pocStyles.table}>
-                <thead style={{backgroundColor: '#fafbfc'}}>
-                    <tr>
-                        <th style={pocStyles.th}>Reference</th>
-                        <th style={pocStyles.th}>Period</th>
-                        <th style={pocStyles.th}>Limit</th>
-                        <th style={pocStyles.th}>Status</th>
-                        <th style={pocStyles.th}>Reason</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {allRelatedConstraints.length > 0 ? (
-                        allRelatedConstraints.sort((a,b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()).map((gc, idx) => (
-                            <tr key={gc.id} style={{...pocStyles.row, backgroundColor: idx % 2 === 1 ? '#fafbfc' : '#fff'}}>
-                                <td style={{...pocStyles.td, fontWeight: 600, fontSize: '0.85rem'}}>{gc.id}</td>
-                                <td style={{...pocStyles.td, fontSize: '0.8rem'}}>
-                                    <div>{new Date(gc.startTime).toLocaleDateString()}</div>
-                                    <div style={{color: '#6b778c'}}>{new Date(gc.startTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} - {new Date(gc.endTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
-                                </td>
-                                <td style={{...pocStyles.td, fontWeight: 700}}>
-                                    <div style={{display:'flex', alignItems:'center', gap:'4px', color: gc.status === 'Expired' ? '#6b778c' : '#cf1322'}}>
-                                        <Zap size={12}/> {gc.limitValue} {gc.limitUnit}
-                                    </div>
-                                </td>
-                                <td style={pocStyles.td}>
-                                    <span style={{
-                                        ...pocStyles.badge,
-                                        backgroundColor: gc.status === 'Active' ? '#ffebe6' : (gc.status === 'Planned' ? '#fff0b3' : '#f4f5f7'),
-                                        color: gc.status === 'Active' ? '#bf2600' : (gc.status === 'Planned' ? '#172b4d' : '#5e6c84'),
-                                        fontSize: '0.7rem'
-                                    }}>{gc.status.toUpperCase()}</span>
-                                </td>
-                                <td style={{...pocStyles.td, fontSize: '0.85rem', color: '#42526e'}} title={gc.reason}>
-                                    {gc.reason.length > 40 ? gc.reason.substring(0, 40) + '...' : gc.reason}
-                                </td>
-                            </tr>
-                        ))
-                    ) : (
-                        <tr>
-                            <td colSpan={5} style={{...pocStyles.td, textAlign: 'center', color: '#6b778c', fontStyle: 'italic', padding: '32px'}}>
-                                No constraints found in history.
-                            </td>
-                        </tr>
-                    )}
-                </tbody>
-            </table>
-        </div>
-
-        {/* 9. RELATIONSHIP HISTORY SECTION (Moved to the bottom as per request) */}
-        {cu.relationshipHistory && (
-            <div style={pocStyles.section}>
-                <h3 style={pocStyles.sectionTitle}>
+            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                <h3 style={{...pocStyles.sectionTitle, borderBottom: 'none', marginBottom: 0}}>
                     <History size={18} style={{marginRight: '8px', verticalAlign: 'middle'}}/> Relationship History
                 </h3>
-                <p style={{fontSize: '0.85rem', color: '#6b778c', marginBottom: '20px'}}>
-                    Snapshot of historical actor relations. Highlighted cells indicate changes compared to the previous period (older row below).
-                </p>
-                <div style={{overflowX: 'auto'}}>
+                <button style={styles.historyToggle} onClick={() => setHistoryExpanded(!historyExpanded)}>
+                    {historyExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    {historyExpanded ? 'Collapse' : 'Expand History'}
+                </button>
+            </div>
+            
+            {historyExpanded && (
+                <div style={{marginTop: '20px', borderTop: '1px solid #ebecf0', paddingTop: '20px'}}>
                     <table style={pocStyles.table}>
                         <thead style={{backgroundColor: '#fafbfc'}}>
                             <tr>
                                 <th style={pocStyles.th}>Period</th>
+                                <th style={pocStyles.th}>Service Provider (SP)</th>
+                                <th style={pocStyles.th}>Supplier (RE)</th>
+                                <th style={pocStyles.th}>BRP</th>
                                 <th style={pocStyles.th}>SSN / ORGNR</th>
-                                <th style={pocStyles.th}>SP / BSP</th>
-                                <th style={pocStyles.th}>Retailer (RE)</th>
-                                <th style={pocStyles.th}>Balance Responsible (BRP)</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {cu.relationshipHistory.map((record, idx) => {
-                                // Compare with row below (chronologically older)
-                                const prevRecord = cu.relationshipHistory![idx + 1];
-                                
+                            {cu.relationshipHistory?.map((record, idx) => {
+                                const nextRecord = cu.relationshipHistory?.[idx + 1];
                                 return (
-                                    <tr key={idx} style={{...pocStyles.row, backgroundColor: idx === 0 ? '#f4f8fd' : 'transparent', cursor: 'default'}}>
-                                        <td style={{...pocStyles.td, fontSize: '0.8rem', whiteSpace: 'nowrap'}}>
-                                            <div style={{display:'flex', alignItems:'center', gap:'8px'}}>
-                                                {idx === 0 && <span style={{...pocStyles.badge, ...pocStyles.badgeBlue, fontSize: '0.65rem'}}>CURRENT</span>}
-                                                <span>{record.startDate} — {record.endDate}</span>
+                                    <tr key={idx} style={{...pocStyles.row, backgroundColor: idx === 0 ? '#f4f8fd' : '#fff'}}>
+                                        <td style={pocStyles.td}>
+                                            <div style={{fontSize: '0.8rem', fontWeight: idx === 0 ? 700 : 400}}>
+                                                {record.startDate} — {record.endDate}
                                             </div>
                                         </td>
                                         <td style={pocStyles.td}>
-                                            <span style={getChangedStyle(record.ssnOrgnr, prevRecord?.ssnOrgnr)}>
-                                                {record.ssnOrgnr}
-                                            </span>
+                                            <div style={getChangedStyle(record.sp, nextRecord?.sp)}>{record.sp}</div>
                                         </td>
                                         <td style={pocStyles.td}>
-                                            <span style={getChangedStyle(record.sp, prevRecord?.sp)}>
-                                                {record.sp}
-                                            </span>
+                                            <div style={getChangedStyle(record.re, nextRecord?.re)}>{record.re}</div>
                                         </td>
                                         <td style={pocStyles.td}>
-                                            <span style={getChangedStyle(record.re, prevRecord?.re)}>
-                                                {record.re}
-                                            </span>
+                                            <div style={getChangedStyle(record.brp, nextRecord?.brp)}>{record.brp}</div>
                                         </td>
-                                        <td style={pocStyles.td}>
-                                            <span style={getChangedStyle(record.brp, prevRecord?.brp)}>
-                                                {record.brp}
-                                            </span>
-                                        </td>
+                                        <td style={pocStyles.td}>{record.ssnOrgnr}</td>
                                     </tr>
                                 );
                             })}
                         </tbody>
                     </table>
                 </div>
-                <div style={{marginTop: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: '#6b778c'}}>
-                    <Info size={14} />
-                    <span>Chronological order: Oldest at the bottom <ArrowDown size={14} style={{display: 'inline'}} /></span>
-                </div>
-            </div>
-        )}
-
-        <button 
-            style={styles.historyToggle}
-            onClick={() => setHistoryExpanded(!historyExpanded)}
-        >
-            {historyExpanded ? <ChevronUp size={16}/> : <ChevronDown size={16}/>}
-            {historyExpanded ? 'Hide system audit' : 'View system audit'}
-        </button>
-
-        {historyExpanded && (
-            <div style={{...pocStyles.section, marginTop: '16px', animation: 'fadeIn 0.2s ease-in'}}>
-                <h3 style={styles.subSectionTitle}>System Registration & Audit</h3>
-                <div style={styles.fieldGrid}>
-                    <Field label="Recorded at" value="25.3.2025, 11:17:23 CET" />
-                    <Field label="Recorded by" value="System (Automated)" />
-                    <Field label="Schema Version" value="v1.4.2" />
-                </div>
-            </div>
-        )}
+            )}
+        </div>
     </div>
   );
 };

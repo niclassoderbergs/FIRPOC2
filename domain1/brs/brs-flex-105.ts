@@ -6,6 +6,7 @@ export const brsFlex105: BRSData = {
   id: "BRS-FLEX-107", // Updated from 105
   previousId: "BRS-FLEX-105",
   title: "SP begär återaktivering av CU",
+  architecturalNote: "OBS: Denna process ska ändras så att den utförs av CU Registration Responsible (CURR) istället för Service Provider (SP).",
   purpose: "SP begär att en suspenderad CU ska återaktiveras efter att orsaken till suspenderingen har åtgärdats.",
   actors: [
     { role: "Initiator", description: "SP" },

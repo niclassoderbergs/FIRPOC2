@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo } from 'react';
 import { pocStyles } from './fir-poc/styles';
 import { Menu, ArrowLeft } from 'lucide-react';
@@ -13,9 +14,11 @@ import { FirGridConstraintsList } from './fir-poc/pages/FirGridConstraintsList';
 import { FirGridConstraintDetail } from './fir-poc/pages/FirGridConstraintDetail';
 import { FirPartiesList } from './fir-poc/pages/FirPartiesList';
 import { FirBspList } from './fir-poc/pages/FirBspList';
+import { FirSpList } from './fir-poc/pages/FirSpList';
 import { FirDsoList } from './fir-poc/pages/FirDsoList';
 import { FirReList } from './fir-poc/pages/FirReList';
 import { FirBrpList } from './fir-poc/pages/FirBrpList';
+import { FirRegResponsibleList } from './fir-poc/pages/FirRegResponsibleList';
 import { FirPartyDetail } from './fir-poc/pages/FirPartyDetail';
 import { FirProductTypeList } from './fir-poc/pages/FirProductTypeList';
 import { FirProductDetail } from './fir-poc/pages/FirProductDetail';
@@ -29,7 +32,6 @@ import { FirVerificationDetail } from './fir-poc/pages/FirVerificationDetail';
 import { FirBspSettlement } from './fir-poc/pages/FirBspSettlement';
 import { FirBrpSettlement } from './fir-poc/pages/FirBrpSettlement';
 import { FirReSettlement } from './fir-poc/pages/FirReSettlement';
-// Fix: Added missing mock data imports for navigation logic
 import { 
   mockCUs, 
   CU, 
@@ -40,7 +42,9 @@ import {
   mockBRPs, 
   mockBSPs, 
   svkProducts, 
-  mockGridConstraints 
+  mockGridConstraints,
+  mockSPs,
+  mockRegResponsibles 
 } from './fir-poc/mockData';
 
 interface NavigationState {
@@ -120,7 +124,8 @@ export const FirGuiPocPage: React.FC = () => {
   const handleSelectParty = useCallback((name: string) => {
     pushHistory();
     setSelectedPartyName(name);
-    if (!['dsos', 'res', 'brps', 'bsp', 'parties', 'overview'].includes(currentView)) {
+    // Bevara roll-specifik kontext om möjligt
+    if (!['dsos', 'res', 'brps', 'bsp', 'sp', 'reg_responsible', 'parties', 'overview'].includes(currentView)) {
         setCurrentView('parties');
     }
   }, [currentView, pushHistory]);
@@ -177,6 +182,8 @@ export const FirGuiPocPage: React.FC = () => {
     mockREs.forEach(r => nameSet.add(r.name));
     mockBRPs.forEach(b => nameSet.add(b.name));
     mockBSPs.forEach(s => nameSet.add(s.name));
+    mockSPs.forEach(s => nameSet.add(s.name));
+    mockRegResponsibles.forEach(r => nameSet.add(r.name));
     return Array.from(nameSet).sort();
   }, []);
 
@@ -224,19 +231,15 @@ export const FirGuiPocPage: React.FC = () => {
         return <FirCUDetail cu={selectedCU} prevCU={prevCU} nextCU={nextCU} onSelectCU={handleSelectCU} onBack={handleGoBack} onNavigateToGroup={handleSelectSPG} onSelectParty={handleSelectParty} onSelectBid={handleSelectBid} />;
     }
     if (selectedSpgId && currentView === 'spgs') {
-        // Fix: Added missing properties prevSpg, nextSpg, onSelectSPG
         return <FirSPGDetail id={selectedSpgId} prevSpg={prevSpg} nextSpg={nextSpg} onSelectSPG={handleSelectSPG} onBack={handleGoBack} onSelectCU={handleSelectCU} onSelectBid={handleSelectBid} />;
     }
-    if (selectedPartyName && ['parties', 'overview', 'bsp', 'dsos', 'res', 'brps'].includes(currentView)) {
-        // Fix: Added missing properties prevParty, nextParty, onSelectParty
+    if (selectedPartyName && ['parties', 'overview', 'bsp', 'sp', 'dsos', 'res', 'brps', 'reg_responsible'].includes(currentView)) {
         return <FirPartyDetail partyName={selectedPartyName} prevParty={prevParty} nextParty={nextParty} onSelectParty={handleSelectParty} onBack={handleGoBack} onSelectCU={handleSelectCU} onSelectSPG={handleSelectSPG} />;
     }
     if (selectedProductId && currentView === 'prod_types') {
-        // Fix: Added missing properties prevProduct, nextProduct, onSelectProduct
         return <FirProductDetail productId={selectedProductId} prevProduct={prevProduct} nextProduct={nextProduct} onSelectProduct={handleSelectProduct} onBack={handleGoBack} onNavigateToGroup={handleSelectSPG} onSelectParty={handleSelectParty} onSelectBid={handleSelectBid} />;
     }
     if (selectedConstraintId && currentView === 'grid_constraint_detail') {
-        // Fix: Added missing properties prevConstraint, nextConstraint, onSelectConstraint
         return <FirGridConstraintDetail id={selectedConstraintId} prevConstraint={prevConstraint} nextConstraint={nextConstraint} onSelectConstraint={handleSelectConstraint} onBack={handleGoBack} onSelectCU={handleSelectCU} onSelectSPG={handleSelectSPG} />;
     }
     if (selectedBidId && currentView === 'verification') {
@@ -265,6 +268,8 @@ export const FirGuiPocPage: React.FC = () => {
         case 'brp_settlement': return <FirBrpSettlement onSelectBid={handleSelectBid} onSelectParty={handleSelectParty} />;
         case 're_settlement': return <FirReSettlement onSelectBid={handleSelectBid} onSelectParty={handleSelectParty} />;
         case 'bsp': return <FirBspList onSelect={handleSelectParty} />;
+        case 'sp': return <FirSpList onSelect={handleSelectParty} />;
+        case 'reg_responsible': return <FirRegResponsibleList onSelect={handleSelectParty} />;
         case 'dsos': return <FirDsoList onSelect={handleSelectParty} />;
         case 'res': return <FirReList onSelect={handleSelectParty} />;
         case 'brps': return <FirBrpList onSelect={handleSelectParty} />;
@@ -291,6 +296,8 @@ export const FirGuiPocPage: React.FC = () => {
     switch(currentView) {
         case 'parties': return 'Global Parties Overview';
         case 'bsp': return 'Balance Service Providers (BSP)';
+        case 'sp': return 'Service Providers (SP)';
+        case 'reg_responsible': return 'CU Registration Responsibles';
         case 'dsos': return 'Distribution System Operators (DSO)';
         case 'res': return 'Retail Entities (RE)';
         case 'brps': return 'Balance Responsible Parties (BRP)';

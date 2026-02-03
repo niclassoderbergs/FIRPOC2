@@ -3,6 +3,7 @@ import React, { useMemo } from 'react';
 import { ViewMode } from './menuConfig';
 import { BRSData, MPSData, DocStatus, Revision } from '../types';
 import { styles } from './styles';
+import { AlertTriangle } from 'lucide-react';
 
 // Pages
 import { StatusPage } from '../StatusPage';
@@ -557,6 +558,28 @@ export const AppRouter: React.FC<AppRouterProps> = ({
                     <h1 style={styles.docTitle}>{activeBRS.title}</h1>
                 )}
               </div>
+
+              {activeBRS.architecturalNote && (
+                <div style={{
+                  backgroundColor: '#fff9e6',
+                  borderLeft: '6px solid #ffab00',
+                  padding: '16px 24px',
+                  borderRadius: '8px',
+                  marginBottom: '32px',
+                  display: 'flex',
+                  gap: '16px',
+                  alignItems: 'flex-start',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                }}>
+                  <AlertTriangle size={24} color="#d46b08" style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <div>
+                    <strong style={{ color: '#856404', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Arkitektonisk policyändring</strong>
+                    <p style={{ margin: '4px 0 0 0', color: '#856404', fontSize: '1rem', lineHeight: '1.5', fontWeight: 500 }}>
+                      {activeBRS.architecturalNote}
+                    </p>
+                  </div>
+                </div>
+              )}
               
               <PurposeSection activeBRS={activeBRS} styles={styles} isEditing={isEditing} onUpdate={handleUpdateBRS} />
               

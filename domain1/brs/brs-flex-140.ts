@@ -6,6 +6,7 @@ export const brsFlex140: BRSData = {
   id: "BRS-FLEX-141", // Updated from 140
   previousId: "BRS-FLEX-140",
   title: "SP kopplar CU till SPG",
+  architecturalNote: "OBS: Denna process ska ändras så att den utförs av CU Registration Responsible (CURR) istället för Service Provider (SP).",
   purpose: "Att inkludera en CU i en marknadsportfölj (SPG). Om CU redan ligger i en annan SPG flyttas den.",
   actors: [
     { role: "Initiator", description: "SP" },

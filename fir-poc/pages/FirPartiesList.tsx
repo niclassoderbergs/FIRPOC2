@@ -125,16 +125,16 @@ export const FirPartiesList: React.FC<Props> = ({ onSelect }) => {
                                     <div style={{display:'flex', gap:'6px', flexWrap: 'wrap'}}>
                                         {party.isREG && (
                                             <span style={{...pocStyles.badge, backgroundColor: '#f3e5f5', color: '#4a148c', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.65rem'}} title="Registration Responsible">
-                                                <UserPlus size={10} /> REG
+                                                <UserPlus size={10} /> CU REG RESP
                                             </span>
                                         )}
                                         {party.isSP && (
-                                            <span style={{...pocStyles.badge, backgroundColor: '#e6effc', color: '#0052cc', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.65rem'}} title="Service Provider">
+                                            <span style={{...pocStyles.badge, backgroundColor: '#e6fffa', color: '#006d5b', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.65rem'}} title="Service Provider">
                                                 <ShieldCheck size={10} /> SP
                                             </span>
                                         )}
                                         {party.isBSP && (
-                                            <span style={{...pocStyles.badge, backgroundColor: '#e6effc', color: '#0052cc', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.65rem'}} title="Balance Service Provider">
+                                            <span style={{...pocStyles.badge, backgroundColor: '#deebff', color: '#0747a6', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.65rem'}} title="Balance Service Provider">
                                                 <Briefcase size={10} /> BSP
                                             </span>
                                         )}

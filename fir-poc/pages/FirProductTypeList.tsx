@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { pocStyles } from '../styles';
-import { Zap, Activity, Shield, Clock, Plus, Filter } from 'lucide-react';
+import { Zap, Activity, Shield, Clock, Plus, Filter, Globe, MapPin } from 'lucide-react';
 import { svkProducts } from '../mockData';
 
 interface Props {
@@ -23,8 +23,8 @@ export const FirProductTypeList: React.FC<Props> = ({ onSelect }) => {
 
             <div style={{...pocStyles.section, padding: '16px', display: 'flex', gap: '12px', alignItems: 'center'}}>
                 <div style={{display: 'flex', gap: '8px', flex: 1}}>
-                    <span style={{...pocStyles.badge, ...pocStyles.badgeBlue}}>TSO Products ({svkProducts.filter(p => p.category !== 'Capacity').length})</span>
-                    <span style={{...pocStyles.badge}}>DSO Products (1)</span>
+                    <span style={{...pocStyles.badge, ...pocStyles.badgeBlue}}>TSO Products ({svkProducts.filter(p => p.market.includes('TSO')).length})</span>
+                    <span style={{...pocStyles.badge}}>DSO Products ({svkProducts.filter(p => p.market.includes('DSO')).length})</span>
                 </div>
                 <button style={{...pocStyles.actionButton, backgroundColor: '#fff', color: '#42526e', border: '1px solid #dfe1e6', display: 'flex', alignItems: 'center', gap: '8px'}}>
                     <Filter size={16} /> Filter
@@ -36,10 +36,11 @@ export const FirProductTypeList: React.FC<Props> = ({ onSelect }) => {
                     <thead style={{backgroundColor: '#fafbfc'}}>
                         <tr>
                             <th style={{...pocStyles.th, width: '15%'}}>Name</th>
-                            <th style={{...pocStyles.th, width: '15%'}}>Category</th>
-                            <th style={{...pocStyles.th, width: '15%'}}>Activation</th>
-                            <th style={{...pocStyles.th, width: '40%'}}>Description</th>
-                            <th style={{...pocStyles.th, width: '15%'}}>Status</th>
+                            <th style={{...pocStyles.th, width: '15%'}}>Market</th>
+                            <th style={{...pocStyles.th, width: '12%'}}>Category</th>
+                            <th style={{...pocStyles.th, width: '12%'}}>Activation</th>
+                            <th style={{...pocStyles.th, width: '35%'}}>Description</th>
+                            <th style={{...pocStyles.th, width: '11%'}}>Status</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -58,10 +59,17 @@ export const FirProductTypeList: React.FC<Props> = ({ onSelect }) => {
                                     </div>
                                 </td>
                                 <td style={pocStyles.td}>
+                                    <div style={{display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: '#172b4d', fontWeight: 500}}>
+                                        {product.market.includes('TSO') ? <Globe size={14} color="#0052cc" /> : <MapPin size={14} color="#4a148c" />}
+                                        {product.market}
+                                    </div>
+                                </td>
+                                <td style={pocStyles.td}>
                                     <span style={{
                                         ...pocStyles.badge,
                                         backgroundColor: product.category === 'Frequency' ? '#f3e5f5' : (product.category === 'Energy' ? '#e8f5e9' : '#fff3e0'),
                                         color: product.category === 'Frequency' ? '#4a148c' : (product.category === 'Energy' ? '#1b5e20' : '#e65100'),
+                                        fontSize: '0.65rem'
                                     }}>
                                         {product.category}
                                     </span>

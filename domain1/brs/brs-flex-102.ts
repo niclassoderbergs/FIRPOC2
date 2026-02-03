@@ -5,6 +5,7 @@ import { content102Input } from '../../content-definitions';
 export const brsFlex102: BRSData = {
   id: "BRS-FLEX-102",
   title: "SP uppdaterar CU",
+  architecturalNote: "OBS: Denna process ska ändras så att den utförs av CU Registration Responsible (CURR) istället för Service Provider (SP).",
   purpose: "Processen används för att uppdatera stamdata för en befintlig Styrbar Enhet (CU). Detta säkerställer att registret speglar verkligheten vid förändringar (t.ex. utökad effekt).",
   actors: [
     { role: "Initiator", description: "SP" },
@@ -43,7 +44,7 @@ export const brsFlex102: BRSData = {
   businessRules: [
     { id: "BRSFLEX102-6", description: "Angivet CU-ID måste existera i FIS.", errorCode: "E_102_CU_NOT_FOUND" },
     { id: "BRSFLEX102-7", description: "Angivet Mätpunkts-ID måste matcha det som är kopplat till CU:n (extra verifiering).", errorCode: "E_102_MP_MISMATCH" },
-    { id: "BRSFLEX102-8", description: "Uppdateringar som påverkar kvalificering måste ha ett ValidityStart minst 10 dagar framåt i tiden (DR NC Art 22(1)).", errorCode: "E_102_TIME_CONSTRAINT" },
+    { id: "BRS-FLEX-102-8", description: "Uppdateringar som påverkar kvalificering måste ha ett ValidityStart minst 10 dagar framåt i tiden (DR NC Art 22(1)).", errorCode: "E_102_TIME_CONSTRAINT" },
     { id: "BRSFLEX102-9", description: "Det är inte tillåtet att ändra kopplat Mätpunkts-ID via denna process.", errorCode: "E_102_MPID_IMMUTABLE" }
   ],
   process: [

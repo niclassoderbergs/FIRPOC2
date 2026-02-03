@@ -8,21 +8,19 @@ import {
   Globe, 
   Layers,
   BarChart3,
-  Clock,
   CheckCircle2,
   Briefcase,
   ClipboardList,
   Package,
   LineChart,
   FileBarChart,
-  TrendingUp,
   MapPin,
   Box,
-  Info,
   Terminal,
   Target,
   UserCircle,
-  ZapOff
+  ZapOff,
+  UserPlus
 } from 'lucide-react';
 import { 
   mockCUs, 
@@ -34,7 +32,8 @@ import {
   svkProducts,
   baselineMethods,
   mockBids,
-  POC_NOW
+  POC_NOW,
+  mockRegResponsibles
 } from '../mockData';
 
 interface Props {
@@ -140,13 +139,19 @@ export const FirDashboard: React.FC<Props> = ({ onNavigate }) => {
         const currentConstraints = mockGridConstraints.filter(c => c.status === 'Active');
         const futureConstraints = mockGridConstraints.filter(c => c.status === 'Planned');
 
+        const tsoProductCount = svkProducts.filter(p => p.market.includes('TSO')).length;
+        const dsoProductCount = svkProducts.filter(p => p.market.includes('DSO')).length;
+
         return {
             totalMWNum,
             totalMW: totalMWNum.toFixed(1),
             cuCount: mockCUs.length.toLocaleString(),
             spBspCount: mockBSPs.length,
+            regResponsibleCount: mockRegResponsibles.length,
             activeConstraintsCount: currentConstraints.length,
             productCount: svkProducts.length,
+            tsoProductCount,
+            dsoProductCount,
             baselineCount: baselineMethods.length,
             potential,
             zoneBreakdown,
@@ -167,7 +172,6 @@ export const FirDashboard: React.FC<Props> = ({ onNavigate }) => {
     const settlementSummary = useMemo(() => {
         const weekAgo = new Date(POC_NOW.getTime() - (7 * 24 * 60 * 60 * 1000));
         
-        // Filter for verified activations in last 7 days
         const recentVerifiedBids = mockBids.filter(bid => {
             const date = new Date(bid.timestamp);
             const diffHours = (POC_NOW.getTime() - date.getTime()) / (1000 * 60 * 60);
@@ -178,7 +182,6 @@ export const FirDashboard: React.FC<Props> = ({ onNavigate }) => {
                    diffHours >= 6;
         });
 
-        // Group by Product -> Zone
         const productMap: Record<string, Record<string, any>> = {};
         recentVerifiedBids.forEach(bid => {
             if (!productMap[bid.productId]) productMap[bid.productId] = {};
@@ -330,12 +333,20 @@ export const FirDashboard: React.FC<Props> = ({ onNavigate }) => {
                     onClick={() => onNavigate('cus')} 
                 />
                 <StatCard 
-                    title="Registered SP/BSP" 
+                    title="Registered SP" 
                     value={stats.spBspCount} 
                     subValue="Market authorized actors"
                     icon={Briefcase} 
                     color="#4a148c" 
-                    onClick={() => onNavigate('bsp')} 
+                    onClick={() => onNavigate('sp')} 
+                />
+                <StatCard 
+                    title="CU Reg. Responsibles" 
+                    value={stats.regResponsibleCount} 
+                    subValue="Authorized on-boarders"
+                    icon={UserPlus} 
+                    color="#6554c0" 
+                    onClick={() => onNavigate('reg_responsible')} 
                 />
                 <StatCard 
                     title="Active Constraints" 
@@ -355,8 +366,20 @@ export const FirDashboard: React.FC<Props> = ({ onNavigate }) => {
                 />
                 <StatCard 
                     title="Products" 
-                    value={stats.productCount} 
-                    subValue="Market products"
+                    value={
+                      <div style={{ display: 'flex', gap: '16px', alignItems: 'baseline' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '0.65rem', color: '#6b778c', textTransform: 'uppercase', fontWeight: 700, marginBottom: '-4px' }}>TSO</span>
+                          <span>{stats.tsoProductCount}</span>
+                        </div>
+                        <div style={{ width: '1px', height: '22px', backgroundColor: '#dfe1e6', alignSelf: 'center' }} />
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '0.65rem', color: '#6b778c', textTransform: 'uppercase', fontWeight: 700, marginBottom: '-4px' }}>DSO</span>
+                          <span>{stats.dsoProductCount}</span>
+                        </div>
+                      </div>
+                    } 
+                    subValue={`${stats.productCount} Market products`}
                     icon={Package} 
                     color="#008da6" 
                     onClick={() => onNavigate('prod_types')} 
@@ -542,7 +565,7 @@ export const FirDashboard: React.FC<Props> = ({ onNavigate }) => {
                                 </div>
                                 
                                 <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '12px' }}>
-                                    {svkProducts.filter(p => p.id !== 'LOCAL-FLEX').map(product => {
+                                    {svkProducts.filter(p => !p.market.includes('Lokal')).map(product => {
                                         const val = productMap[product.id] || 0;
                                         const pct = (val / globalMaxProductVal) * 100;
                                         const color = product.category === 'Frequency' ? '#6554c0' : (product.category === 'Energy' ? '#36b37e' : '#ffab00');
@@ -599,7 +622,8 @@ const styles = {
         color: '#42526e',
         textTransform: 'uppercase' as const,
         display: 'flex',
-        alignItems: 'center', gap: '10px',
+        alignItems: 'center',
+        gap: '10px',
         borderBottom: '1px solid #ebecf0',
         paddingBottom: '12px',
         marginBottom: '12px'

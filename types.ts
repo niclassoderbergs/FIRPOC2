@@ -81,6 +81,7 @@ export interface BRSData {
   status?: DocStatus;
   tags?: string[]; // Flexible tagging system (e.g. 'NON_DHV_2026')
   history?: Revision[];
+  architecturalNote?: string; // Nytt fält för arkitekturella märkningar
 }
 
 // --- MPS (Market Process Scenario) ---
