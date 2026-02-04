@@ -9,7 +9,8 @@ import {
   Users, 
   Globe,
   Layers,
-  Info
+  Info,
+  Database
 } from 'lucide-react';
 
 const roles = [
@@ -36,6 +37,13 @@ const roles = [
     bg: '#f3e5f5',
     desc: 'Handles the technical life cycle in FIR, including onboarding, updating, and decommissioning of controllable units (CUs).',
     isBundle: true
+  },
+  {
+    title: 'Datahub (DHV)',
+    icon: Database,
+    color: '#0747a6',
+    bg: '#deebff',
+    desc: 'Provides relationships, meter values, and technical point data. Ensures that settlement is performed for the correct parties at any given time.'
   },
   {
     title: 'System Operator (TSO)',
