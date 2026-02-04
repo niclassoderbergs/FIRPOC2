@@ -11,6 +11,7 @@ import { ReRoleView } from './party-roles/ReRoleView';
 import { BrpRoleView } from './party-roles/BrpRoleView';
 import { SpRoleView } from './party-roles/SpRoleView';
 import { SpAgreementView } from './party-roles/SpAgreementView';
+import { SpDsoSettlementView } from './party-roles/SpDsoSettlementView';
 import { CurrRoleView } from './party-roles/CurrRoleView';
 import { TechnicalDetails } from './party-roles/TechnicalDetails';
 
@@ -136,18 +137,27 @@ export const FirPartyDetail: React.FC<Props> = ({ partyName, prevParty, nextPart
         <CurrRoleView partyName={partyName} onSelectCU={onSelectCU} />
       )}
 
-      {/* SERVICE PROVIDER ROLE: Always show agreements if actor is SP */}
+      {/* SERVICE PROVIDER ROLE: Flexibility Agreements */}
       {roles.isSP && (
         <SpAgreementView partyName={partyName} onSelectCU={onSelectCU} />
       )}
 
-      {/* BALANCE SERVICE PROVIDER ROLE: Only show portfolios/settlement if actor is BSP */}
+      {/* BALANCE SERVICE PROVIDER ROLE: BSP Settlement (TSO) */}
       {roles.isBSP && (
         <SpRoleView 
           managedSPGs={managedSPGs} 
           ownedCUs={ownedCUs} 
           onSelectSPG={onSelectSPG} 
           isBSP={true}
+        />
+      )}
+
+      {/* SERVICE PROVIDER ROLE: DSO Settlement (Local Markets) */}
+      {roles.isSP && (
+        <SpDsoSettlementView 
+          managedSPGs={managedSPGs} 
+          ownedCUs={ownedCUs} 
+          onSelectSPG={onSelectSPG} 
         />
       )}
 

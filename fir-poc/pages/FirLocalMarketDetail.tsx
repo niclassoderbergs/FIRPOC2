@@ -10,7 +10,11 @@ import {
   ChevronRight,
   Zap,
   Globe,
-  Database
+  Database,
+  CheckCircle2,
+  AlertCircle,
+  Clock,
+  Coins
 } from 'lucide-react';
 import { mockLocalMarkets, mockDSOs } from '../mockData';
 
@@ -41,13 +45,41 @@ const styles = {
         alignItems: 'center',
         gap: '12px',
         fontSize: '0.9rem'
+    },
+    productGrid: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+        gap: '20px',
+        marginTop: '20px'
+    },
+    productCard: {
+        padding: '24px',
+        borderRadius: '12px',
+        border: '1px solid #dfe1e6',
+        backgroundColor: '#fff',
+        display: 'flex',
+        flexDirection: 'column' as const,
+        gap: '16px'
+    },
+    productSubHeader: {
+        fontSize: '0.75rem',
+        fontWeight: 700,
+        color: '#6b778c',
+        textTransform: 'uppercase' as const,
+        marginBottom: '4px'
+    },
+    criteriaBox: {
+        backgroundColor: '#f4f5f7',
+        borderRadius: '8px',
+        padding: '16px',
+        marginBottom: '24px',
+        border: '1px solid #dfe1e6'
     }
 };
 
 export const FirLocalMarketDetail: React.FC<Props> = ({ id, onBack }) => {
   const market = useMemo(() => mockLocalMarkets.find(m => m.id === id), [id]);
 
-  // Dynamic logic: Find all Grid Areas (MGAs) where E.ON is the owner
   const validMGAs = useMemo(() => {
     if (!market) return [];
     return mockDSOs.filter(dso => dso.name === market.owner);
@@ -88,28 +120,57 @@ export const FirLocalMarketDetail: React.FC<Props> = ({ id, onBack }) => {
         <button style={{ ...pocStyles.actionButton, backgroundColor: '#0052cc' }}>Open Market Dashboard</button>
       </div>
 
+      {/* Participation Requirements */}
+      <div style={styles.criteriaBox}>
+          <div style={{display:'flex', alignItems:'center', gap:'8px', marginBottom:'12px'}}>
+              <Info size={18} color="#0052cc" />
+              <span style={{fontWeight: 700, fontSize: '0.9rem', color: '#172b4d'}}>General participation requirements for all products</span>
+          </div>
+          <ul style={{margin: 0, paddingLeft: '20px', fontSize: '0.85rem', color: '#42526e', display:'grid', gridTemplateColumns: '1fr 1fr', gap: '10px'}}>
+              <li style={{display:'flex', gap:'8px'}}><CheckCircle2 size={12} color="#36b37e" style={{marginTop:'4px', flexShrink:0}} /> Deliver at least 0.1 MWh/h to the affected grid point.</li>
+              <li style={{display:'flex', gap:'8px'}}><CheckCircle2 size={12} color="#36b37e" style={{marginTop:'4px', flexShrink:0}} /> Flexibility must be delivered for at least one hour.</li>
+              <li style={{display:'flex', gap:'8px'}}><CheckCircle2 size={12} color="#36b37e" style={{marginTop:'4px', flexShrink:0}} /> Provide accurate meter values for delivered flexibility.</li>
+          </ul>
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '24px' }}>
         <div className="space-y-6">
           <div style={pocStyles.section}>
             <h3 style={styles.sectionHeader}><Info size={16} /> Market Description</h3>
-            <p style={{ lineHeight: '1.6', color: '#334155' }}>{market.description}</p>
-            <div style={{ marginTop: '24px', display: 'flex', gap: '12px' }}>
-              <div style={{ flex: 1, padding: '16px', backgroundColor: '#f0f7ff', borderRadius: '8px', border: '1px solid #b3d4ff' }}>
-                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#0052cc', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Market Products</span>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
-                   {market.products.map(p => (
-                     <span key={p} style={{ ...pocStyles.badge, backgroundColor: '#fff', border: '1px solid #b3d4ff', color: '#0052cc' }}>
-                       <Zap size={10} style={{ display: 'inline', marginRight: '4px' }} /> {p}
-                     </span>
-                   ))}
+            <p style={{ lineHeight: '1.6', color: '#334155', fontSize: '0.95rem' }}>{market.description}</p>
+            
+            <div style={{marginTop: '32px'}}>
+                <h4 style={styles.sectionHeader}><Zap size={16} /> Available Products</h4>
+                <div style={styles.productGrid}>
+                    {market.detailedProducts?.map(prod => (
+                        <div key={prod.name} style={{
+                            ...styles.productCard,
+                            borderTop: `4px solid ${prod.type === 'Activation' ? '#008da6' : '#6554c0'}`
+                        }}>
+                            <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
+                                <h5 style={{margin:0, fontWeight: 800, fontSize: '1.1rem'}}>{prod.name}</h5>
+                                <span style={{...pocStyles.badge, fontSize:'0.65rem', backgroundColor: prod.type === 'Activation' ? '#e6f7ff' : '#f9f0ff', color: prod.type === 'Activation' ? '#0050b3' : '#531dab'}}>
+                                    {prod.type.toUpperCase()}
+                                </span>
+                            </div>
+
+                            <div>
+                                <div style={styles.productSubHeader}><Clock size={10} style={{display:'inline', marginRight:'4px'}}/> Time Horizon</div>
+                                <div style={{fontSize: '0.85rem', color: '#334155'}}>{prod.timeHorizon}</div>
+                            </div>
+
+                            <div>
+                                <div style={styles.productSubHeader}><Coins size={10} style={{display:'inline', marginRight:'4px'}}/> Remuneration</div>
+                                <div style={{fontSize: '0.85rem', color: '#334155'}}>{prod.remuneration}</div>
+                            </div>
+
+                            <div style={{backgroundColor: '#fafbfc', padding: '12px', borderRadius: '6px', border: '1px solid #ebecf0'}}>
+                                <div style={styles.productSubHeader}><ShieldCheck size={10} style={{display:'inline', marginRight:'4px'}}/> Qualification</div>
+                                <div style={{fontSize: '0.8rem', color: '#6b778c'}}>{prod.qualification}</div>
+                            </div>
+                        </div>
+                    ))}
                 </div>
-              </div>
-              <div style={{ flex: 1, padding: '16px', backgroundColor: '#f4fbf8', borderRadius: '8px', border: '1px solid #b3dfc1' }}>
-                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#006644', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Integration Status</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', color: '#006644', fontWeight: 700 }}>
-                   <ShieldCheck size={18} /> FIR-Link Active
-                </div>
-              </div>
             </div>
           </div>
 
@@ -166,6 +227,16 @@ export const FirLocalMarketDetail: React.FC<Props> = ({ id, onBack }) => {
                     <li>Minimum bid size: <strong>0.1 MW</strong></li>
                     <li>Gate Closure: <strong>D-1 12:00 CET</strong></li>
                 </ul>
+            </div>
+
+            <div style={{...pocStyles.section, backgroundColor: '#fff7e6', borderColor: '#ffbb96'}}>
+                <div style={{display:'flex', alignItems:'center', gap:'8px', marginBottom:'12px', color: '#d46b08'}}>
+                    <AlertCircle size={18} />
+                    <span style={{fontWeight: 700, fontSize: '0.9rem'}}>Cross-Market Rule</span>
+                </div>
+                <p style={{fontSize:'0.8rem', color:'#873800', margin:0, lineHeight:'1.4'}}>
+                    The system automatically blocks bids in local markets if the resource is already activated at the TSO level to prevent double payment.
+                </p>
             </div>
         </div>
       </div>

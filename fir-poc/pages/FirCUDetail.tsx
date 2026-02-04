@@ -97,8 +97,7 @@ const styles = {
   },
   breadcrumb: {
     display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
+    alignItems: 'center', gap: '8px',
     fontSize: '0.85rem',
     color: '#5e6c84',
     cursor: 'pointer'
@@ -255,7 +254,7 @@ const styles = {
   },
   overviewGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(4, 1fr)',
+    gridTemplateColumns: 'repeat(5, 1fr)',
     gap: '16px',
     marginBottom: '24px'
   },
@@ -355,22 +354,28 @@ const getNormalDistributedFactor = (seed: string) => {
 export const FirCUDetail: React.FC<Props> = ({ cu, prevCU, nextCU, onSelectCU, onBack, onNavigateToGroup, onSelectParty, onSelectBid }) => {
   const [historyExpanded, setHistoryExpanded] = useState(false);
   const [verificationPage, setVerificationPage] = useState(0);
-  const currentSpg = mockSPGs.find(s => s.id === cu.spgId);
+  
+  const currentTsoSpg = mockSPGs.find(s => s.id === cu.spgId);
+  const currentLocalSpg = mockSPGs.find(s => s.id === cu.localSpgId);
   
   // Grid Constraints Logic
   const allRelatedConstraints = mockGridConstraints.filter(gc => gc.affectedUnits.includes(cu.id));
   const activeAndPlannedConstraints = allRelatedConstraints.filter(gc => gc.status !== 'Expired');
   
-  // Find all applications for this SPG
-  const spgApplications = cu.spgId 
-    ? mockSPGProductApplications.filter(app => app.spgId === cu.spgId)
-    : [];
+  // Find all applications for both SPGs
+  const allSpgIds = [cu.spgId, cu.localSpgId].filter(Boolean) as string[];
+  const spgApplications = mockSPGProductApplications.filter(app => allSpgIds.includes(app.spgId));
 
   const newlyApprovedProducts = spgApplications
     .filter(app => app.status === 'Approved')
     .map(app => app.product);
   
-  const activeQualifications = [...new Set([...(currentSpg?.qualifications || []), ...newlyApprovedProducts])];
+  const inheritedQualifications = [
+      ...(currentTsoSpg?.qualifications || []),
+      ...(currentLocalSpg?.qualifications || [])
+  ];
+
+  const activeQualifications = [...new Set([...inheritedQualifications, ...newlyApprovedProducts])];
   
   // Separation logic for TSO vs DSO products
   const { tsoQualifications, dsoQualifications } = useMemo(() => {
@@ -378,12 +383,12 @@ export const FirCUDetail: React.FC<Props> = ({ cu, prevCU, nextCU, onSelectCU, o
     const dso: any[] = [];
     
     activeQualifications.forEach(productId => {
-      const productMeta = svkProducts.find(p => p.id === productId);
+      const productMeta = svkProducts.find(p => p.id === productId || p.name === productId);
       const isConfigured = cu.productBaselines.some(pb => pb.productId === productId);
       
       const item = { productId, isConfigured };
       
-      if (productMeta?.market.includes('TSO')) {
+      if (productMeta?.market.includes('TSO') || productMeta?.market.includes('Balancing')) {
         tso.push(item);
       } else {
         dso.push(item);
@@ -395,21 +400,21 @@ export const FirCUDetail: React.FC<Props> = ({ cu, prevCU, nextCU, onSelectCU, o
 
   // Calculate Historical Verifications for this CU
   const historicalVerifications = useMemo(() => {
-    if (!cu.spgId) return [];
+    if (!cu.spgId && !cu.localSpgId) return [];
     
-    // Units in the same group to calculate "share"
-    const groupUnits = mockCUs.filter(c => c.spgId === cu.spgId);
-    const share = 1 / (groupUnits.length || 1);
-
     return mockBids.filter(bid => {
         const bidTime = new Date(bid.timestamp);
         const diffHours = (POC_NOW.getTime() - bidTime.getTime()) / (1000 * 60 * 60);
-        return bid.spgId === cu.spgId && 
+        return (bid.spgId === cu.spgId || bid.spgId === cu.localSpgId) && 
                bid.selectionStatus === 'Selected' && 
                bid.status === 'Valid' && 
                bid.activationStatus === 'Activated' &&
                diffHours >= 6;
     }).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).map(bid => {
+        // Units in the same group to calculate "share"
+        const groupUnits = mockCUs.filter(c => c.spgId === bid.spgId || c.localSpgId === bid.spgId);
+        const share = 1 / (groupUnits.length || 1);
+
         const cuFactor = getNormalDistributedFactor(bid.id + cu.id);
         const verifiedPower = bid.volumeMW * share * cuFactor;
         const verifiedEnergy = verifiedPower * 0.25; // 15 min MTU
@@ -431,13 +436,12 @@ export const FirCUDetail: React.FC<Props> = ({ cu, prevCU, nextCU, onSelectCU, o
             cuShareMW: verifiedPower,
             cuEnergyMWh: verifiedEnergy,
             accuracyPct: Math.round(cuFactor * 100),
-            // Historical Actors
             affectedSP: historyRecord?.sp || cu.sp,
             affectedRE: historyRecord?.re || cu.re,
             affectedBRP: historyRecord?.brp || cu.brp
         };
     });
-  }, [cu.id, cu.spgId, cu.relationshipHistory, cu.sp, cu.re, cu.brp]);
+  }, [cu.id, cu.spgId, cu.localSpgId, cu.relationshipHistory, cu.sp, cu.re, cu.brp]);
 
   const totalVerificationPages = Math.ceil(historicalVerifications.length / VERIFICATION_PAGE_SIZE);
   const pagedVerifications = historicalVerifications.slice(
@@ -464,7 +468,6 @@ export const FirCUDetail: React.FC<Props> = ({ cu, prevCU, nextCU, onSelectCU, o
 
   const isCuSource = (parseInt(cu.id.split('-').pop() || '0')) % 2 === 0;
 
-  // Shared component for ID display to ensure consistency
   const IdentityDisplay = ({ id }: { id: string }) => (
     <div style={{display: 'flex', alignItems: 'center'}}>
         {id ? (
@@ -593,32 +596,45 @@ export const FirCUDetail: React.FC<Props> = ({ cu, prevCU, nextCU, onSelectCU, o
                     </span>
                 </div>
                 <div style={styles.overviewItem}>
-                    <span style={styles.overviewLabel}>Grid Qualification: Status</span>
+                    <span style={styles.overviewLabel}>Grid Qualification</span>
                     <span style={styles.overviewValue}>
                         {isGridQualified ? <CheckCircle2 size={14} color="#36b37e" /> : <Clock size={14} color="#ffab00" />}
                         {isGridQualified ? 'Qualified' : 'Pending'}
                     </span>
                 </div>
                 <div style={styles.overviewItem}>
-                    <span style={styles.overviewLabel}>Qualification status: Overall</span>
-                    <span style={{
-                        ...styles.overviewValue,
-                        color: cu.status === 'Active' ? '#006644' : (cu.status === 'Pending' ? '#856404' : '#bf2600')
-                    }}>
-                        {cu.status.toUpperCase()}
-                    </span>
-                </div>
-                <div style={styles.overviewItem}>
-                    <span style={styles.overviewLabel}>SPG Member</span>
+                    <span style={styles.overviewLabel}>TSO Portfolio (SPG)</span>
                     <span style={styles.overviewValue}>
                         {cu.spgId ? (
                             <div 
                                 style={{color: '#0052cc', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'}}
                                 onClick={() => onNavigateToGroup(cu.spgId!)}
                             >
-                                <Link2 size={14} /> Yes ({cu.spgId})
+                                <Globe size={14} /> {cu.spgId}
                             </div>
-                        ) : 'No'}
+                        ) : 'None'}
+                    </span>
+                </div>
+                <div style={styles.overviewItem}>
+                    <span style={styles.overviewLabel}>Local Portfolio (SPG)</span>
+                    <span style={styles.overviewValue}>
+                        {cu.localSpgId ? (
+                            <div 
+                                style={{color: '#4a148c', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'}}
+                                onClick={() => onNavigateToGroup(cu.localSpgId!)}
+                            >
+                                <TowerControl size={14} /> {cu.localSpgId}
+                            </div>
+                        ) : 'None'}
+                    </span>
+                </div>
+                <div style={styles.overviewItem}>
+                    <span style={styles.overviewLabel}>Overall Status</span>
+                    <span style={{
+                        ...styles.overviewValue,
+                        color: cu.status === 'Active' ? '#006644' : (cu.status === 'Pending' ? '#856404' : '#bf2600')
+                    }}>
+                        {cu.status.toUpperCase()}
                     </span>
                 </div>
             </div>
@@ -630,51 +646,42 @@ export const FirCUDetail: React.FC<Props> = ({ cu, prevCU, nextCU, onSelectCU, o
                 <Activity size={18} style={{marginRight: '8px', verticalAlign: 'middle'}}/> Market Product Qualifications
             </h3>
             
-            {currentSpg ? (
-                <>
-                    <div style={styles.inheritanceNote}>
-                        <span style={{display:'flex', alignItems:'center', gap:'8px'}}>
-                           <Info size={16} color="#0052cc" />
-                           <span>Inherited market product qualifications from group <strong>{currentSpg.name}</strong>.</span>
-                        </span>
+            <div style={styles.inheritanceNote}>
+                <span style={{display:'flex', alignItems:'center', gap:'8px'}}>
+                    <Info size={16} color="#0052cc" />
+                    <span>Resource inherited qualifications from <strong>{[cu.spgId, cu.localSpgId].filter(Boolean).join(' and ')}</strong>.</span>
+                </span>
+            </div>
+            
+            <div style={{display: 'flex', flexDirection: 'column', gap: '32px', marginTop: '24px'}}>
+                {/* TSO SECTION */}
+                <div>
+                    <span style={styles.subSectionTitle}>
+                        <Globe size={16} color="#0052cc" /> TSO Balancing Products
+                    </span>
+                    <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px'}}>
+                        {tsoQualifications.length > 0 ? tsoQualifications.map(renderQualCard) : (
+                            <div style={{color: '#6b778c', fontStyle: 'italic', fontSize: '0.9rem', padding: '12px'}}>No TSO products qualified.</div>
+                        )}
                     </div>
-                    
-                    <div style={{display: 'flex', flexDirection: 'column', gap: '32px', marginTop: '24px'}}>
-                        {/* TSO SECTION */}
-                        <div>
-                            <span style={styles.subSectionTitle}>
-                                <Globe size={16} color="#0052cc" /> TSO Balancing Products
-                            </span>
-                            <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px'}}>
-                                {tsoQualifications.length > 0 ? tsoQualifications.map(renderQualCard) : (
-                                    <div style={{color: '#6b778c', fontStyle: 'italic', fontSize: '0.9rem', padding: '12px'}}>No TSO products qualified.</div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* DSO SECTION */}
-                        <div>
-                            <span style={styles.subSectionTitle}>
-                                <TowerControl size={16} color="#4a148c" /> DSO Local Products
-                            </span>
-                            <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px'}}>
-                                {dsoQualifications.length > 0 ? dsoQualifications.map(renderQualCard) : (
-                                    <div style={{color: '#6b778c', fontStyle: 'italic', fontSize: '0.9rem', padding: '12px'}}>No DSO products qualified.</div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </>
-            ) : (
-                <div style={{color: '#6b778c', fontStyle: 'italic', fontSize: '0.9rem'}}>
-                    This unit is not part of a Service Providing Group.
                 </div>
-            )}
+
+                {/* DSO SECTION */}
+                <div>
+                    <span style={styles.subSectionTitle}>
+                        <TowerControl size={16} color="#4a148c" /> DSO Local Products
+                    </span>
+                    <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px'}}>
+                        {dsoQualifications.length > 0 ? dsoQualifications.map(renderQualCard) : (
+                            <div style={{color: '#6b778c', fontStyle: 'italic', fontSize: '0.9rem', padding: '12px'}}>No DSO products qualified.</div>
+                        )}
+                    </div>
+                </div>
+            </div>
         </div>
 
         {/* 4. RELATIONSHIPS & BUSINESS AGREEMENTS */}
         <div style={styles.relationGroup}>
-            {/* DHV RELATIONS */}
             <div style={{...styles.relationCard, borderTop: '4px solid #0052cc'}}>
                 <div style={{...styles.relationHeader, color: '#0052cc'}}>
                     <Database size={16} /> DHV Relations
@@ -687,7 +694,6 @@ export const FirCUDetail: React.FC<Props> = ({ cu, prevCU, nextCU, onSelectCU, o
                 </div>
             </div>
 
-            {/* FLEXIBILITY RELATIONS */}
             <div style={{...styles.relationCard, borderTop: '4px solid #4a148c'}}>
                 <div style={{...styles.relationHeader, color: '#4a148c'}}>
                     <Activity size={16} /> Flexibility Relations
@@ -710,7 +716,7 @@ export const FirCUDetail: React.FC<Props> = ({ cu, prevCU, nextCU, onSelectCU, o
             </div>
         </div>
 
-        {/* 5. TECHNICAL IDENTITY & BASE QUALIFICATION */}
+        {/* 5. TECHNICAL IDENTITY */}
         <div style={pocStyles.section}>
             <h3 style={pocStyles.sectionTitle}>
                 <Box size={18} style={{marginRight: '8px', verticalAlign: 'middle'}}/> Technical Identity & Base Qualification
@@ -740,26 +746,11 @@ export const FirCUDetail: React.FC<Props> = ({ cu, prevCU, nextCU, onSelectCU, o
                                 </span>
                             </div>
                             <div style={{display:'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px'}}>
-                                <div style={styles.dhvAttribute}>
-                                    <span style={styles.dhvAttrLabel}>Main Fuse</span>
-                                    <span style={styles.dhvAttrValue}>{cu.mainFuse || 'N/A'}</span>
-                                </div>
-                                <div style={styles.dhvAttribute}>
-                                    <span style={styles.dhvAttrLabel}>Metering Int.</span>
-                                    <span style={styles.dhvAttrValue}>{cu.meteringInterval || 'N/A'}</span>
-                                </div>
-                                <div style={styles.dhvAttribute}>
-                                    <span style={styles.dhvAttrLabel}>Reporting Int.</span>
-                                    <span style={styles.dhvAttrValue}>{cu.reportingInterval || 'N/A'}</span>
-                                </div>
-                                <div style={styles.dhvAttribute}>
-                                    <span style={styles.dhvAttrLabel}>Phases</span>
-                                    <span style={styles.dhvAttrValue}>{cu.numberOfPhases || 'N/A'}</span>
-                                </div>
-                                <div style={styles.dhvAttribute}>
-                                    <span style={styles.dhvAttrLabel}>Voltage</span>
-                                    <span style={styles.dhvAttrValue}>{cu.voltageLevel || 'N/A'}</span>
-                                </div>
+                                <Field label="Main Fuse" value={cu.mainFuse || 'N/A'} />
+                                <Field label="Metering Int." value={cu.meteringInterval || 'N/A'} />
+                                <Field label="Reporting Int." value={cu.reportingInterval || 'N/A'} />
+                                <Field label="Phases" value={cu.numberOfPhases || 'N/A'} />
+                                <Field label="Voltage" value={cu.voltageLevel || 'N/A'} />
                             </div>
                         </div>
                     </div>

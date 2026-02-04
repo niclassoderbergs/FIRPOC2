@@ -34,6 +34,7 @@ import { FirVerificationDetail } from './FirVerificationDetail';
 import { FirBspSettlement } from './FirBspSettlement';
 import { FirBrpSettlement } from './FirBrpSettlement';
 import { FirReSettlement } from './FirReSettlement';
+import { FirLocalFlexSettlement } from './FirLocalFlexSettlement';
 import { 
   mockCUs, 
   CU, 
@@ -46,8 +47,7 @@ import {
   svkProducts, 
   mockGridConstraints,
   mockSPs,
-  mockRegResponsibles,
-  mockLocalMarkets
+  mockRegResponsibles 
 } from '../mockData';
 
 interface NavigationState {
@@ -132,6 +132,7 @@ export const FirGuiPocPage: React.FC = () => {
   const handleSelectParty = useCallback((name: string) => {
     pushHistory();
     setSelectedPartyName(name);
+    // Bevara roll-specifik kontext om möjligt
     if (!['dsos', 'res', 'brps', 'bsp', 'sp', 'reg_responsible', 'parties', 'overview'].includes(currentView)) {
         setCurrentView('parties');
     }
@@ -163,6 +164,7 @@ export const FirGuiPocPage: React.FC = () => {
 
   // --- RENDERING ---
   const renderContent = () => {
+    // 1. Check Detail views first (if applicable)
     if (selectedLocalMarketId && currentView === 'local_market_detail') {
         return <FirLocalMarketDetail id={selectedLocalMarketId} onBack={handleGoBack} />;
     }
@@ -185,6 +187,7 @@ export const FirGuiPocPage: React.FC = () => {
         return <FirVerificationDetail bidId={selectedBidId} onBack={handleGoBack} onSelectCU={handleSelectCU} onSelectSPG={handleSelectSPG} onSelectBid={handleSelectBid} />;
     }
 
+    // 2. Main Routing Switch
     switch (currentView) {
         case 'dashboard': return <FirDashboard onNavigate={handleNavigate} />;
         case 'cus': return <FirCUList onSelect={handleSelectCU} onSelectSPG={handleSelectSPG} onSelectParty={handleSelectParty} onNavigateToParties={() => handleNavigate('parties')} />;
@@ -195,6 +198,7 @@ export const FirGuiPocPage: React.FC = () => {
         case 'settlement_result': return <FirBspSettlement onSelectBid={handleSelectBid} onSelectParty={handleSelectParty} />;
         case 'brp_settlement': return <FirBrpSettlement onSelectBid={handleSelectBid} onSelectParty={handleSelectParty} />;
         case 're_settlement': return <FirReSettlement onSelectBid={handleSelectBid} onSelectParty={handleSelectParty} />;
+        case 'local_flex_settlement': return <FirLocalFlexSettlement onSelectBid={handleSelectBid} onSelectParty={handleSelectParty} />;
         case 'bsp': return <FirBspList onSelect={handleSelectParty} />;
         case 'sp': return <FirSpList onSelect={handleSelectParty} />;
         case 'reg_responsible': return <FirRegResponsibleList onSelect={handleSelectParty} />;
@@ -224,7 +228,8 @@ export const FirGuiPocPage: React.FC = () => {
     if (selectedBidId && currentView === 'verification') return `Verification: ${selectedBidId}`;
     
     switch(currentView) {
-        case 'local_markets': return 'Local flexmarknad';
+        case 'local_flex_settlement': return 'Local Flex Settlement (DSO)';
+        case 'local_markets': return 'Local Markets';
         case 'parties': return 'Global Parties Overview';
         case 'cus': return 'Controllable Units';
         case 'dashboard': return 'System Dashboard';
@@ -239,11 +244,29 @@ export const FirGuiPocPage: React.FC = () => {
         <div style={pocStyles.topBar}>
           <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
             {history.length > 0 && (
-                <button onClick={handleGoBack} style={pocStyles.actionButton}>
-                    <ArrowLeft size={16} /> Back
+                <button 
+                    onClick={handleGoBack}
+                    style={{
+                        background: 'rgba(255,255,255,0.1)',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        borderRadius: '6px',
+                        padding: '6px 12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        cursor: 'pointer',
+                        color: 'white',
+                        marginRight: '8px',
+                        fontSize: '0.85rem',
+                        fontWeight: 600
+                    }}
+                >
+                    <ArrowLeft size={16} />
+                    <span>Back</span>
                 </button>
             )}
-            <Menu size={20} style={{cursor: 'pointer'}} />
+            <Menu size={20} style={{cursor: 'pointer', opacity: history.length > 0 ? 0.7 : 1}} />
             <span style={{fontWeight: 600, letterSpacing: '0.5px', marginLeft: '8px'}}>
                 {getPageTitle()}
             </span>

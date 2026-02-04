@@ -1,24 +1,26 @@
-
 import React, { useMemo } from 'react';
 import { 
-  ChevronRight,
-  Settings,
-  Users,
-  Box,
-  Zap,
-  Clock,
-  Gavel,
-  CheckCircle2,
-  AlertTriangle,
-  ExternalLink,
-  TrendingUp,
-  FileSearch,
-  ArrowLeft,
-  ArrowRight,
-  Link2,
-  MapPin,
-  FileBarChart,
-  ChevronLeft
+  ChevronRight, 
+  Settings, 
+  Users, 
+  Box, 
+  Zap, 
+  Clock, 
+  Gavel, 
+  CheckCircle2, 
+  AlertTriangle, 
+  ExternalLink, 
+  TrendingUp, 
+  FileSearch, 
+  ArrowLeft, 
+  ArrowRight, 
+  Link2, 
+  MapPin, 
+  FileBarChart, 
+  ChevronLeft,
+  // Added missing Globe and TowerControl imports
+  Globe,
+  TowerControl
 } from 'lucide-react';
 import { pocStyles } from '../styles';
 import { mockSPGs, mockCUs, mockSPGProductApplications, mockBids, POC_NOW } from '../mockData';
@@ -49,7 +51,7 @@ const styles = {
   },
   navButton: {
     display: 'flex',
-    alignItems: 'center', gap: '6px',
+    alignItems: 'center gap: 6px',
     padding: '6px 12px',
     backgroundColor: '#fff',
     border: '1px solid #dfe1e6',
@@ -110,7 +112,7 @@ const styles = {
   subSectionTitle: {
     fontSize: '0.8rem',
     fontWeight: 700,
-    color: '#6b778c',
+    color: '#42526e',
     textTransform: 'uppercase' as const,
     letterSpacing: '0.05em',
     marginBottom: '12px',
@@ -118,7 +120,7 @@ const styles = {
   }
 };
 
-// Seeded accuracy calculation to match other views
+// Seeded accuracy calculation helper
 const getSeededDeliveryFactor = (id: string) => {
     let hash = 0;
     for (let i = 0; i < id.length; i++) {
@@ -134,11 +136,17 @@ const getSeededDeliveryFactor = (id: string) => {
 
 export const FirSPGDetail: React.FC<Props> = ({ id, prevSpg, nextSpg, onSelectSPG, onBack, onSelectCU, onSelectBid }) => {
   const spg = mockSPGs.find(s => s.id === id);
-  const unitsInGroup = mockCUs.filter(cu => cu.spgId === id);
-  const totalCapacity = unitsInGroup.reduce((acc, curr) => {
+  
+  // FIX: Look at both spgId and localSpgId to find members
+  const unitsInGroup = useMemo(() => 
+    mockCUs.filter(cu => cu.spgId === id || cu.localSpgId === id)
+  , [id]);
+
+  const totalCapacity = useMemo(() => unitsInGroup.reduce((acc, curr) => {
+      /* Fix: Change cu.capacity to curr.capacity as cu is not in scope */
       const val = curr.capacityUnit === 'kW' ? curr.capacity / 1000 : curr.capacity;
       return acc + val;
-  }, 0).toFixed(1);
+  }, 0).toFixed(1), [unitsInGroup]);
 
   // Filter Bids for this SPG
   const relatedBids = useMemo(() => {
@@ -150,6 +158,7 @@ export const FirSPGDetail: React.FC<Props> = ({ id, prevSpg, nextSpg, onSelectSP
   // Filter Verification Results (Activated Bids)
   const verifiedActivations = useMemo(() => {
     return relatedBids.filter(b => {
+        // Corrected reference from 'bid' to 'b' which is the iteration variable
         const bidTime = new Date(b.timestamp);
         const diffHours = (POC_NOW.getTime() - bidTime.getTime()) / (1000 * 60 * 60);
         return b.selectionStatus === 'Selected' && b.status === 'Valid' && b.activationStatus === 'Activated' && diffHours >= 6;
@@ -205,6 +214,11 @@ export const FirSPGDetail: React.FC<Props> = ({ id, prevSpg, nextSpg, onSelectSP
                 <div style={{color: '#5e6c84', display: 'flex', gap: '16px', fontSize: '0.9rem'}}>
                     <span style={{display: 'flex', alignItems: 'center', gap: '6px'}}><Users size={16}/> {spg.fsp}</span>
                     <span style={{display: 'flex', alignItems: 'center', gap: '6px'}}>📍 {spg.zone}</span>
+                    <span style={{display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, color: spg.marketType === 'TSO' ? '#0052cc' : '#4a148c'}}>
+                        {/* Globe and TowerControl are now imported */}
+                        {spg.marketType === 'TSO' ? <Globe size={16}/> : <TowerControl size={16}/>}
+                        {spg.marketType === 'TSO' ? 'TSO Portfolio' : 'Local Portfolio'}
+                    </span>
                 </div>
              </div>
              <button style={{...pocStyles.actionButton, backgroundColor: '#fff', color: '#42526e', border: '1px solid #dfe1e6', display: 'flex', alignItems: 'center', gap: '8px'}}>

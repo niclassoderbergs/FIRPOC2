@@ -25,6 +25,8 @@ import { FirProductDetail } from './fir-poc/pages/FirProductDetail';
 import { FirServiceProviderApplications } from './fir-poc/pages/FirServiceProviderApplications';
 import { FirSPGProductApplications } from './fir-poc/pages/FirSPGProductApplications';
 import { FirBaselineList } from './fir-poc/pages/FirBaselineList';
+import { FirLocalMarketList } from './fir-poc/pages/FirLocalMarketList';
+import { FirLocalMarketDetail } from './fir-poc/pages/FirLocalMarketDetail';
 import { FirBidsReceived } from './fir-poc/pages/FirBidsReceived';
 import { FirBidsActivated } from './fir-poc/pages/FirBidsActivated';
 import { FirVerificationList } from './fir-poc/pages/FirVerificationList';
@@ -32,6 +34,7 @@ import { FirVerificationDetail } from './fir-poc/pages/FirVerificationDetail';
 import { FirBspSettlement } from './fir-poc/pages/FirBspSettlement';
 import { FirBrpSettlement } from './fir-poc/pages/FirBrpSettlement';
 import { FirReSettlement } from './fir-poc/pages/FirReSettlement';
+import { FirLocalFlexSettlement } from './fir-poc/pages/FirLocalFlexSettlement';
 import { 
   mockCUs, 
   CU, 
@@ -55,6 +58,7 @@ interface NavigationState {
     product: string | null;
     constraint: string | null;
     bidId: string | null;
+    localMarketId: string | null;
 }
 
 export const FirGuiPocPage: React.FC = () => {
@@ -65,6 +69,7 @@ export const FirGuiPocPage: React.FC = () => {
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [selectedConstraintId, setSelectedConstraintId] = useState<string | null>(null);
   const [selectedBidId, setSelectedBidId] = useState<string | null>(null);
+  const [selectedLocalMarketId, setSelectedLocalMarketId] = useState<string | null>(null);
   
   const [history, setHistory] = useState<NavigationState[]>([]);
 
@@ -76,9 +81,10 @@ export const FirGuiPocPage: React.FC = () => {
         party: selectedPartyName,
         product: selectedProductId,
         constraint: selectedConstraintId,
-        bidId: selectedBidId
+        bidId: selectedBidId,
+        localMarketId: selectedLocalMarketId
     }]);
-  }, [currentView, selectedCU, selectedSpgId, selectedPartyName, selectedProductId, selectedConstraintId, selectedBidId]);
+  }, [currentView, selectedCU, selectedSpgId, selectedPartyName, selectedProductId, selectedConstraintId, selectedBidId, selectedLocalMarketId]);
 
   const handleGoBack = useCallback(() => {
     if (history.length === 0) return;
@@ -91,6 +97,7 @@ export const FirGuiPocPage: React.FC = () => {
     setSelectedProductId(previous.product);
     setSelectedConstraintId(previous.constraint);
     setSelectedBidId(previous.bidId);
+    setSelectedLocalMarketId(previous.localMarketId);
   }, [history]);
 
   const handleNavigate = useCallback((view: PocView) => {
@@ -102,6 +109,7 @@ export const FirGuiPocPage: React.FC = () => {
     setSelectedProductId(null);
     setSelectedConstraintId(null);
     setSelectedBidId(null);
+    setSelectedLocalMarketId(null);
   }, [pushHistory]);
 
   const handleSelectCU = useCallback((id: string) => {
@@ -124,7 +132,6 @@ export const FirGuiPocPage: React.FC = () => {
   const handleSelectParty = useCallback((name: string) => {
     pushHistory();
     setSelectedPartyName(name);
-    // Bevara roll-specifik kontext om möjligt
     if (!['dsos', 'res', 'brps', 'bsp', 'sp', 'reg_responsible', 'parties', 'overview'].includes(currentView)) {
         setCurrentView('parties');
     }
@@ -148,7 +155,13 @@ export const FirGuiPocPage: React.FC = () => {
     setCurrentView('verification');
   }, [pushHistory]);
 
-  // --- BID NAVIGATION LOGIC ---
+  const handleSelectLocalMarket = useCallback((id: string) => {
+    pushHistory();
+    setSelectedLocalMarketId(id);
+    setCurrentView('local_market_detail');
+  }, [pushHistory]);
+
+  // --- NAVIGATION MEMOS & HANDLERS ---
   const sortedBids = useMemo(() => {
     return [...mockBids].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   }, []);
@@ -165,18 +178,25 @@ export const FirGuiPocPage: React.FC = () => {
     if (idx < sortedBids.length - 1) setSelectedBidId(sortedBids[idx + 1].id);
   }, [selectedBidId, sortedBids]);
 
-  // --- SPG NAVIGATION ---
+  const { prevCU, nextCU } = useMemo(() => {
+    if (!selectedCU) return { prevCU: null, nextCU: null };
+    const idx = mockCUs.findIndex(c => c.id === selectedCU.id);
+    return {
+        prevCU: idx > 0 ? mockCUs[idx - 1] : null,
+        nextCU: idx < mockCUs.length - 1 ? mockCUs[idx + 1] : null
+    };
+  }, [selectedCU]);
+
   const { prevSpg, nextSpg } = useMemo(() => {
     if (!selectedSpgId) return { prevSpg: null, nextSpg: null };
-    const currentIndex = mockSPGs.findIndex(s => s.id === selectedSpgId);
+    const idx = mockSPGs.findIndex(s => s.id === selectedSpgId);
     return {
-        prevSpg: currentIndex > 0 ? mockSPGs[currentIndex - 1] : null,
-        nextSpg: currentIndex < mockSPGs.length - 1 ? mockSPGs[currentIndex + 1] : null
+        prevSpg: idx > 0 ? mockSPGs[idx - 1] : null,
+        nextSpg: idx < mockSPGs.length - 1 ? mockSPGs[idx + 1] : null
     };
   }, [selectedSpgId]);
 
-  // --- PARTY NAVIGATION ---
-  const allParties = useMemo(() => {
+  const allPartyNames = useMemo(() => {
     const nameSet = new Set<string>();
     mockDSOs.forEach(d => nameSet.add(d.name));
     mockREs.forEach(r => nameSet.add(r.name));
@@ -189,44 +209,36 @@ export const FirGuiPocPage: React.FC = () => {
 
   const { prevParty, nextParty } = useMemo(() => {
     if (!selectedPartyName) return { prevParty: null, nextParty: null };
-    const currentIndex = allParties.indexOf(selectedPartyName);
+    const idx = allPartyNames.indexOf(selectedPartyName);
     return {
-        prevParty: currentIndex > 0 ? allParties[currentIndex - 1] : null,
-        nextParty: currentIndex < allParties.length - 1 ? allParties[currentIndex + 1] : null
+        prevParty: idx > 0 ? allPartyNames[idx - 1] : null,
+        nextParty: idx < allPartyNames.length - 1 ? allPartyNames[idx + 1] : null
     };
-  }, [selectedPartyName, allParties]);
+  }, [selectedPartyName, allPartyNames]);
 
-  // --- PRODUCT NAVIGATION ---
   const { prevProduct, nextProduct } = useMemo(() => {
     if (!selectedProductId) return { prevProduct: null, nextProduct: null };
-    const currentIndex = svkProducts.findIndex(p => p.id === selectedProductId);
+    const idx = svkProducts.findIndex(p => p.id === selectedProductId);
     return {
-        prevProduct: currentIndex > 0 ? svkProducts[currentIndex - 1] : null,
-        nextProduct: currentIndex < svkProducts.length - 1 ? svkProducts[currentIndex + 1] : null
+        prevProduct: idx > 0 ? svkProducts[idx - 1] : null,
+        nextProduct: idx < svkProducts.length - 1 ? svkProducts[idx + 1] : null
     };
   }, [selectedProductId]);
 
-  // --- CONSTRAINT NAVIGATION ---
   const { prevConstraint, nextConstraint } = useMemo(() => {
     if (!selectedConstraintId) return { prevConstraint: null, nextConstraint: null };
-    const currentIndex = mockGridConstraints.findIndex(c => c.id === selectedConstraintId);
+    const idx = mockGridConstraints.findIndex(c => c.id === selectedConstraintId);
     return {
-        prevConstraint: currentIndex > 0 ? mockGridConstraints[currentIndex - 1] : null,
-        nextConstraint: currentIndex < mockGridConstraints.length - 1 ? mockGridConstraints[currentIndex + 1] : null
+        prevConstraint: idx > 0 ? mockGridConstraints[idx - 1] : null,
+        nextConstraint: idx < mockGridConstraints.length - 1 ? mockGridConstraints[idx + 1] : null
     };
   }, [selectedConstraintId]);
 
-  const { prevCU, nextCU } = useMemo(() => {
-    if (!selectedCU) return { prevCU: null, nextCU: null };
-    const currentIndex = mockCUs.findIndex(c => c.id === selectedCU.id);
-    return {
-        prevCU: currentIndex > 0 ? mockCUs[currentIndex - 1] : null,
-        nextCU: currentIndex < mockCUs.length - 1 ? mockCUs[currentIndex + 1] : null
-    };
-  }, [selectedCU]);
-
+  // --- RENDERING ---
   const renderContent = () => {
-    // 1. Check Detail views first (if applicable)
+    if (selectedLocalMarketId && currentView === 'local_market_detail') {
+        return <FirLocalMarketDetail id={selectedLocalMarketId} onBack={handleGoBack} />;
+    }
     if (selectedCU && currentView === 'cus') {
         return <FirCUDetail cu={selectedCU} prevCU={prevCU} nextCU={nextCU} onSelectCU={handleSelectCU} onBack={handleGoBack} onNavigateToGroup={handleSelectSPG} onSelectParty={handleSelectParty} onSelectBid={handleSelectBid} />;
     }
@@ -243,20 +255,9 @@ export const FirGuiPocPage: React.FC = () => {
         return <FirGridConstraintDetail id={selectedConstraintId} prevConstraint={prevConstraint} nextConstraint={nextConstraint} onSelectConstraint={handleSelectConstraint} onBack={handleGoBack} onSelectCU={handleSelectCU} onSelectSPG={handleSelectSPG} />;
     }
     if (selectedBidId && currentView === 'verification') {
-        return (
-          <FirVerificationDetail 
-            bidId={selectedBidId} 
-            onBack={handleGoBack} 
-            onSelectCU={handleSelectCU} 
-            onSelectSPG={handleSelectSPG} 
-            onSelectBid={handleSelectBid}
-            onPrev={handlePrevBid}
-            onNext={handleNextBid}
-          />
-        );
+        return <FirVerificationDetail bidId={selectedBidId} onBack={handleGoBack} onSelectCU={handleSelectCU} onSelectSPG={handleSelectSPG} onSelectBid={handleSelectBid} onPrev={handlePrevBid} onNext={handleNextBid} />;
     }
 
-    // 2. Main Routing Switch
     switch (currentView) {
         case 'dashboard': return <FirDashboard onNavigate={handleNavigate} />;
         case 'cus': return <FirCUList onSelect={handleSelectCU} onSelectSPG={handleSelectSPG} onSelectParty={handleSelectParty} onNavigateToParties={() => handleNavigate('parties')} />;
@@ -267,6 +268,7 @@ export const FirGuiPocPage: React.FC = () => {
         case 'settlement_result': return <FirBspSettlement onSelectBid={handleSelectBid} onSelectParty={handleSelectParty} />;
         case 'brp_settlement': return <FirBrpSettlement onSelectBid={handleSelectBid} onSelectParty={handleSelectParty} />;
         case 're_settlement': return <FirReSettlement onSelectBid={handleSelectBid} onSelectParty={handleSelectParty} />;
+        case 'local_flex_settlement': return <FirLocalFlexSettlement onSelectBid={handleSelectBid} onSelectParty={handleSelectParty} />;
         case 'bsp': return <FirBspList onSelect={handleSelectParty} />;
         case 'sp': return <FirSpList onSelect={handleSelectParty} />;
         case 'reg_responsible': return <FirRegResponsibleList onSelect={handleSelectParty} />;
@@ -281,11 +283,13 @@ export const FirGuiPocPage: React.FC = () => {
         case 'sp_applications': return <FirServiceProviderApplications />;
         case 'spg_applications': return <FirSPGProductApplications onSelectSPG={handleSelectSPG} />;
         case 'baselines': return <FirBaselineList />;
+        case 'local_markets': return <FirLocalMarketList onSelect={handleSelectLocalMarket} />;
         default: return <FirGenericList title={currentView} />;
     }
   };
 
   const getPageTitle = () => {
+    if (selectedLocalMarketId && currentView === 'local_market_detail') return `Local Market: ${selectedLocalMarketId}`;
     if (selectedCU && currentView === 'cus') return `Controllable unit ${selectedCU.id}`;
     if (selectedSpgId && currentView === 'spgs') return `SPG ${selectedSpgId}`;
     if (selectedPartyName) return `Party: ${selectedPartyName}`;
@@ -294,22 +298,10 @@ export const FirGuiPocPage: React.FC = () => {
     if (selectedBidId && currentView === 'verification') return `Verification: ${selectedBidId}`;
     
     switch(currentView) {
+        case 'local_flex_settlement': return 'Local Flex Settlement (DSO)';
+        case 'local_markets': return 'Local Markets';
         case 'parties': return 'Global Parties Overview';
-        case 'bsp': return 'Balance Service Providers (BSP)';
-        case 'sp': return 'Service Providers (SP)';
-        case 'reg_responsible': return 'CU Registration Responsibles';
-        case 'dsos': return 'Distribution System Operators (DSO)';
-        case 'res': return 'Retail Entities (RE)';
-        case 'brps': return 'Balance Responsible Parties (BRP)';
         case 'cus': return 'Controllable Units';
-        case 'spgs': return 'Service Providing Groups';
-        case 'bids_received': return 'Received Bids & Capacity Validation';
-        case 'bids_activated': return 'Market Dispatch & Activation';
-        case 'verification': return 'Settlement Verification';
-        case 'settlement_result': return 'BSP Settlement';
-        case 'brp_settlement': return 'BRP Settlement';
-        case 're_settlement': return 'RE Settlement';
-        case 'grid_constraints': return 'Temporary Grid Constraints';
         case 'dashboard': return 'System Dashboard';
         default: return 'Flexibility Information System Portal';
     }
@@ -350,7 +342,7 @@ export const FirGuiPocPage: React.FC = () => {
             </span>
           </div>
           <div style={{display: 'flex', gap: '12px'}}>
-             <button style={pocStyles.actionButton}>Service Provider</button>
+             <button style={pocStyles.actionButton}>Registry Admin</button>
           </div>
         </div>
         {renderContent()}

@@ -21,7 +21,9 @@ import {
   ExternalLink,
   Briefcase,
   AlertCircle,
-  ChevronLeft
+  ChevronLeft,
+  Globe,
+  TowerControl
 } from 'lucide-react';
 import { pocStyles } from '../styles';
 import { svkProducts, mockCUs, mockSPGs, mockBids, POC_NOW } from '../mockData';
@@ -176,7 +178,6 @@ const styles = {
   }
 };
 
-// Seeded accuracy calculation helper
 const getSeededDeliveryFactor = (id: string) => {
     let hash = 0;
     for (let i = 0; i < id.length; i++) {
@@ -193,7 +194,6 @@ const getSeededDeliveryFactor = (id: string) => {
 export const FirProductDetail: React.FC<Props> = ({ productId, prevProduct, nextProduct, onSelectProduct, onBack, onNavigateToGroup, onSelectParty, onSelectBid }) => {
   const product = svkProducts.find(p => p.id === productId);
 
-  // Settlement Data Logic - now includes preliminary bids (no 6h filter here)
   const settlementHistory = useMemo(() => {
     return mockBids.filter(bid => {
         return bid.productId === productId && 
@@ -225,7 +225,11 @@ export const FirProductDetail: React.FC<Props> = ({ productId, prevProduct, next
     const spgIds = spgsInZone.map(s => s.id);
     
     const leaderboard = spgsInZone.map(spg => {
-        const cusInSpg = mockCUs.filter(cu => cu.spgId === spg.id);
+        // Updated filter: CU must belong to the SPG AND have the specific product baseline
+        const cusInSpg = mockCUs.filter(cu => 
+            (cu.spgId === spg.id || cu.localSpgId === spg.id) &&
+            cu.productBaselines.some(pb => pb.productId === productId)
+        );
         const volumeInMW = cusInSpg.reduce((sum, cu) => {
             const val = cu.capacityUnit === 'kW' ? cu.capacity / 1000 : cu.capacity;
             return sum + val;
@@ -239,7 +243,12 @@ export const FirProductDetail: React.FC<Props> = ({ productId, prevProduct, next
         };
     }).sort((a, b) => b.volume - a.volume).slice(0, 3);
 
-    const cusInAllSpgsInZone = mockCUs.filter(cu => cu.spgId && spgIds.includes(cu.spgId));
+    // Filter CUs checking both potential mapping fields AND product baseline
+    const cusInAllSpgsInZone = mockCUs.filter(cu => 
+        ((cu.spgId && spgIds.includes(cu.spgId)) || (cu.localSpgId && spgIds.includes(cu.localSpgId))) &&
+        cu.productBaselines.some(pb => pb.productId === productId)
+    );
+    
     const totalVolumeMW = cusInAllSpgsInZone.reduce((sum, cu) => {
         const val = cu.capacityUnit === 'kW' ? cu.capacity / 1000 : cu.capacity;
         return sum + val;
@@ -258,7 +267,6 @@ export const FirProductDetail: React.FC<Props> = ({ productId, prevProduct, next
 
   return (
     <div style={pocStyles.content}>
-      {/* STICKY HEADER NAVIGATION */}
       <div style={styles.stickyHeader}>
           <div style={{display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#5e6c84', cursor: 'pointer'}}>
             <span onClick={onBack}>Home</span>
@@ -288,6 +296,28 @@ export const FirProductDetail: React.FC<Props> = ({ productId, prevProduct, next
       <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px'}}>
         <div>
           <h1 style={{...pocStyles.pageTitle, marginBottom: '8px'}}>{product.name}</h1>
+          <div style={{display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px'}}>
+            <span style={{
+                ...pocStyles.badge,
+                backgroundColor: product.market.includes('TSO') ? '#deebff' : '#f3e5f5',
+                color: product.market.includes('TSO') ? '#0052cc' : '#4a148c',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontWeight: 700
+            }}>
+                {product.market.includes('TSO') ? <Globe size={14}/> : <TowerControl size={14}/>}
+                {product.market}
+            </span>
+            <span style={{
+                ...pocStyles.badge,
+                backgroundColor: '#f4f5f7',
+                color: '#42526e',
+                border: '1px solid #dfe1e6'
+            }}>
+                Operator: <strong>{product.operator}</strong>
+            </span>
+          </div>
           <div style={{display: 'flex', gap: '8px'}}>
             <span style={{
                 ...pocStyles.badge,
@@ -430,7 +460,6 @@ export const FirProductDetail: React.FC<Props> = ({ productId, prevProduct, next
         </div>
       </div>
 
-      {/* 5. SETTLEMENT HISTORY SECTION */}
       <div style={pocStyles.section}>
         <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
             <h3 style={{...pocStyles.sectionTitle, borderBottom: 'none', marginBottom: 0}}>

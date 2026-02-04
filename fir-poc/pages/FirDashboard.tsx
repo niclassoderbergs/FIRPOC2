@@ -20,7 +20,8 @@ import {
   Target,
   UserCircle,
   ZapOff,
-  UserPlus
+  UserPlus,
+  TowerControl
 } from 'lucide-react';
 import { 
   mockCUs, 
@@ -35,6 +36,7 @@ import {
   POC_NOW,
   mockRegResponsibles
 } from '../mockData';
+import { FirRoleGuide } from '../components/FirRoleGuide';
 
 interface Props {
     onNavigate: (view: any) => void;
@@ -139,8 +141,9 @@ export const FirDashboard: React.FC<Props> = ({ onNavigate }) => {
         const currentConstraints = mockGridConstraints.filter(c => c.status === 'Active');
         const futureConstraints = mockGridConstraints.filter(c => c.status === 'Planned');
 
-        const tsoProductCount = svkProducts.filter(p => p.market.includes('TSO')).length;
-        const dsoProductCount = svkProducts.filter(p => p.market.includes('DSO')).length;
+        // FIXED: Improved product counting logic to include E.ON/Local products in DSO count
+        const tsoProductCount = svkProducts.filter(p => p.operator.includes('kraftnät')).length;
+        const dsoProductCount = svkProducts.filter(p => !p.operator.includes('kraftnät')).length;
 
         return {
             totalMWNum,
@@ -290,7 +293,7 @@ export const FirDashboard: React.FC<Props> = ({ onNavigate }) => {
                     }}>
                         <ZapOff size={24} color="#666" style={{ flexShrink: 0, marginTop: '2px' }} />
                         <div style={{ fontSize: '0.85rem', lineHeight: '1.5', color: '#444' }}>
-                            <strong>LOCAL FLEXIBILITY MARKETS NOTE:</strong> Local DSO-level flexibility markets are currently not implemented in this POC. In a production FIR, all resources and bids from local markets will be integrated. This enables cross-market validation to prevent double-activations and ensure that market signals do not conflict with local grid security.
+                            <strong>LOCAL FLEXIBILITY MARKETS NOTE:</strong> Local DSO-level flexibility markets are integrated in this POC. You can view products and market definitions under <strong>Local Markets</strong>. FIR ensures that resources and bids from local markets do not conflict with transmission-level balancing or grid security.
                         </div>
                     </div>
                 </div>
@@ -304,6 +307,9 @@ export const FirDashboard: React.FC<Props> = ({ onNavigate }) => {
                     </div>
                 </div>
             </div>
+
+            {/* NEW ROLE GUIDE SECTION */}
+            <FirRoleGuide />
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '32px' }}>
                 <div>
@@ -622,8 +628,7 @@ const styles = {
         color: '#42526e',
         textTransform: 'uppercase' as const,
         display: 'flex',
-        alignItems: 'center',
-        gap: '10px',
+        alignItems: 'center', gap: '10px',
         borderBottom: '1px solid #ebecf0',
         paddingBottom: '12px',
         marginBottom: '12px'

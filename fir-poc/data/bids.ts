@@ -1,5 +1,5 @@
 
-import { Bid, CU } from '../types';
+import { Bid } from '../types';
 import { mockSPGs } from './spgs';
 import { mockCUs } from './cus';
 
@@ -11,7 +11,7 @@ const ANCHOR_NOW = new Date('2026-01-31T10:00:00Z');
  */
 const getSpgCapacityMW = (spgId: string): number => {
   return mockCUs
-    .filter(cu => cu.spgId === spgId)
+    .filter(cu => cu.spgId === spgId || cu.localSpgId === spgId)
     .reduce((sum, cu) => {
       const val = cu.capacityUnit === 'kW' ? cu.capacity / 1000 : cu.capacity;
       return sum + val;
@@ -20,75 +20,102 @@ const getSpgCapacityMW = (spgId: string): number => {
 
 const generateStaticBids = (): Bid[] => {
   const bids: Bid[] = [];
-  const currentYear = ANCHOR_NOW.getUTCFullYear();
   
   const spgCapacityMap: Record<string, number> = {};
   mockSPGs.forEach(s => {
     spgCapacityMap[s.id] = getSpgCapacityMW(s.id);
   });
 
-  // TIDSFÖNSTER: Ett helt år bakåt för att visa historiska aktörsbyten
-  // Från 2025-01-01 till 2026-01-31
+  // TIDSFÖNSTER: Från början av 2025 fram till slutet av februari 2026
   const startDate = new Date('2025-01-01T00:00:00Z');
-  const endDate = ANCHOR_NOW;
+  const endDate = new Date('2026-02-28T23:59:59Z');
   
   const daysDiff = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
 
   mockSPGs.forEach((spg, spgIdx) => {
-    const hasCapacity = spgCapacityMap[spg.id] > 0;
-    if (!hasCapacity) return;
+    const totalCap = spgCapacityMap[spg.id];
+    if (totalCap <= 0) return;
 
-    // För varje SPG, generera ca 20-30 utspridda aktiveringar per år
-    // Vi loopar igenom dagarna men med ett hopp för att skapa gleshet
+    const isLocalMarket = spg.marketType === 'Local';
+
     for (let d = 0; d <= daysDiff; d++) {
-      // Skapa ett unikt frö för denna SPG + Dag
-      const daySeed = (spgIdx + 1) * (d + 789);
-      const rand = (daySeed % 1000) / 1000;
+      // Skapa flera bud per dag för att öka datamängden
+      const bidsPerDay = isLocalMarket ? 4 : 2; 
 
-      // 4% sannolikhet att en SPG har en aktivitet en specifik dag (~14 gånger per år)
-      // Detta skapar veckor eller månader mellan aktiveringar för samma enhet
-      if (rand < 0.04) {
-        const date = new Date(startDate);
-        date.setUTCDate(startDate.getUTCDate() + d);
-        
-        // Välj en slumpmässig MTU för dagen
-        const hour = (daySeed % 24);
-        const hourStr = hour.toString().padStart(2, '0');
-        const timestamp = `${date.toISOString().split('T')[0]}T${hourStr}:00:00Z`;
-        const bidTime = new Date(timestamp);
+      for (let bpd = 0; bpd < bidsPerDay; bpd++) {
+        const daySeed = (spgIdx + 1) * (d + 789) * (bpd + 1);
+        const rand = (daySeed % 1000) / 1000;
 
-        const prodIdx = (daySeed) % spg.qualifications.length;
-        const productId = spg.qualifications[prodIdx];
-        
-        // Budvolym: 40-90% av kapacitet
-        const volumeMW = spgCapacityMap[spg.id] * (0.4 + (daySeed % 50) / 100);
-        const price = 30 + (daySeed % 60);
+        // KRAFTIGT ÖKADE TRÖSKELVÄRDEN
+        // Lokala marknader: 25% chans per slot
+        // TSO marknader: 15% chans per slot
+        const threshold = isLocalMarket ? 0.25 : 0.15;
 
-        // Alla historiska bud sätts som Selected/Activated för att bygga verifieringsstatistik
-        // Framtida bud (om några skulle hamna där) sätts som Scheduled
-        const isFuture = bidTime > ANCHOR_NOW;
-        
-        bids.push({
-          id: `BID-${bidTime.getFullYear()}-${20000 + bids.length}`,
-          spgId: spg.id,
-          bsp: spg.fsp,
-          productId: productId,
-          volumeMW: parseFloat(volumeMW.toFixed(1)),
-          availableCapacityMW: parseFloat(spgCapacityMap[spg.id].toFixed(1)),
-          period: `${hourStr}:00`,
-          zone: spg.zone,
-          price: price,
-          status: 'Valid',
-          timestamp: timestamp,
-          selectionStatus: 'Selected',
-          activationStatus: isFuture ? 'Scheduled' : 'Activated',
-          isActivated: !isFuture
-        });
+        if (rand < threshold) {
+          const date = new Date(startDate);
+          date.setUTCDate(startDate.getUTCDate() + d);
+          
+          // Fördela buden över dygnet
+          const hour = (daySeed % 24);
+          const hourStr = hour.toString().padStart(2, '0');
+          const timestamp = `${date.toISOString().split('T')[0]}T${hourStr}:00:00Z`;
+          const bidTime = new Date(timestamp);
+
+          // Välj produkt
+          const prodIdx = daySeed % spg.qualifications.length;
+          const productId = spg.qualifications[prodIdx];
+          
+          // Volym-logik
+          let volumeMW = totalCap * (0.1 + (daySeed % 80) / 100);
+          
+          let status: 'Valid' | 'Invalid' = 'Valid';
+          let selectionStatus: 'Selected' | 'Rejected' = 'Selected';
+          
+          // Minska felmarginalen för att få mer "ren" data
+          if ((daySeed % 100) < 3) {
+              status = 'Invalid';
+              volumeMW = totalCap * 1.5; 
+              selectionStatus = 'Rejected';
+          }
+
+          // Nätbegränsning (Rejected) - 5%
+          if (status === 'Valid' && (daySeed % 100) < 5) {
+              selectionStatus = 'Rejected';
+          }
+
+          const isFuture = bidTime > ANCHOR_NOW;
+          let activationStatus: 'Scheduled' | 'Activated' | 'Not Activated' = 'Not Activated';
+          
+          if (selectionStatus === 'Selected') {
+              if (isFuture) {
+                  activationStatus = 'Scheduled';
+              } else {
+                  // Historiska bud: 90% chans att de blev aktiverade (för att se mer verifierad data)
+                  activationStatus = (daySeed % 10) < 9 ? 'Activated' : 'Not Activated';
+              }
+          }
+
+          bids.push({
+            id: `BID-${bidTime.getFullYear()}-${20000 + bids.length}`,
+            spgId: spg.id,
+            bsp: spg.fsp,
+            productId: productId,
+            volumeMW: parseFloat(volumeMW.toFixed(1)),
+            availableCapacityMW: parseFloat(totalCap.toFixed(1)),
+            period: `${hourStr}:00`,
+            zone: spg.zone,
+            price: isLocalMarket ? 80 + (daySeed % 40) : 30 + (daySeed % 60),
+            status: status,
+            timestamp: timestamp,
+            selectionStatus: selectionStatus,
+            activationStatus: activationStatus,
+            isActivated: activationStatus === 'Activated'
+          });
+        }
       }
     }
   });
 
-  // Sortera med de nyaste först
   return bids.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 };
 

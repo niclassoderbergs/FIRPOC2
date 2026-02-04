@@ -44,16 +44,16 @@ const getSeededDeliveryFactor = (id: string) => {
 };
 
 /**
- * Shared logic to determine if a bid is missing data (30% probability)
+ * Shared logic to determine if a bid is missing data
+ * Changed probability: now only 10% are missing (down from 30%)
  */
 export const isMissingMeterValues = (bidId: string) => {
     const bidNum = parseInt(bidId.split('-').pop() || '0', 10);
-    return (bidNum % 10) < 3; // 0, 1, 2 = 30%
+    return (bidNum % 10) < 1; // 0 = 10%
 };
 
 /**
  * Logik för att avgöra verifieringsstatus.
- * Inkluderar simulering av att ca 30% av buden saknar mätvärden.
  */
 const getVerificationStatus = (bid: any) => {
     const bidTime = new Date(bid.timestamp);
@@ -113,7 +113,6 @@ export const FirVerificationList: React.FC<Props> = ({ onSelectBid, onSelectSPG,
 
             return {
                 bidMW: acc.bidMW + curr.volumeMW,
-                // Addera endast mätvärden om status är 'Verified'
                 verMW: acc.verMW + (isVerified ? verifiedMW : 0),
                 verMWh: acc.verMWh + (isVerified ? (verifiedMW * 0.25) : 0),
                 verifiedCount: acc.verifiedCount + (isVerified ? 1 : 0)
@@ -130,7 +129,7 @@ export const FirVerificationList: React.FC<Props> = ({ onSelectBid, onSelectSPG,
     return (
         <div style={pocStyles.content}>
             <div style={{backgroundColor: '#f3f0ff', borderLeft: '4px solid #403294', padding: '16px 20px', borderRadius: '4px', marginBottom: '32px'}}>
-                <div style={{display:'flex', alignItems:'center', gap:'10px', marginBottom:'8px'}}>
+                <div style={{display:'flex', alignItems:'center', gap:'12px', marginBottom:'8px'}}>
                     <CheckCircle2 size={20} color="#403294" />
                     <strong style={{color: '#403294'}}>Settlement Verification (Ex-post) — Final Results for {displayDate}</strong>
                 </div>

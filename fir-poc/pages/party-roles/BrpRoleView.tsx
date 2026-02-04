@@ -13,10 +13,12 @@ import {
   ArrowRight,
   Info,
   FileText,
-  ChevronLeft
+  ChevronLeft,
+  Globe,
+  TowerControl
 } from 'lucide-react';
 import { pocStyles } from '../../styles';
-import { mockBids, mockCUs, POC_NOW } from '../../mockData';
+import { mockBids, mockCUs, POC_NOW, svkProducts } from '../../mockData';
 
 interface Props {
   balanceCUs: any[];
@@ -26,7 +28,6 @@ interface Props {
 
 const DETAIL_PAGE_SIZE = 20;
 
-// Consistent delivery factor logic
 const getSeededDeliveryFactor = (id: string) => {
     let hash = 0;
     for (let i = 0; i < id.length; i++) {
@@ -49,38 +50,34 @@ export const BrpRoleView: React.FC<Props> = ({ balanceCUs, brpStatsByRE, onSelec
         setExpandedRe(null);
     } else {
         setExpandedRe(name);
-        setDetailPage(0); // Reset page on expansion
+        setDetailPage(0);
     }
   };
 
-  // Synchronize time window with mock data availability (Last 7 days from POC_NOW)
-  const { weekStart, weekEnd, weekLabel } = useMemo(() => {
+  const { weekStart, weekEnd } = useMemo(() => {
     const end = new Date(POC_NOW);
     const start = new Date(POC_NOW);
     start.setDate(start.getDate() - 7);
-    
-    const format = (d: Date) => d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' });
-    return { 
-        weekStart: start, 
-        weekEnd: end, 
-        weekLabel: `${format(start)} - ${format(end)}` 
-    };
+    return { weekStart: start, weekEnd: end };
   }, []);
 
-  // Central Logic: Find and quantify all activations within BRP perimeter
   const settlementData = useMemo(() => {
-    const reMap = new Map<string, { totalMWh: number, activations: any[] }>();
-    let totalVolumeMWh = 0;
+    const reMap = new Map<string, { totalMWh: number, tsoMWh: number, dsoMWh: number, activations: any[] }>();
+    let totalTsoMWh = 0;
+    let totalDsoMWh = 0;
 
-    // 1. Get all SPGs where this BRP has at least one CU
-    const mySpgIds = new Set(balanceCUs.map(cu => cu.spgId).filter(Boolean));
+    // Build sets of portfolio IDs I am responsible for
+    const myTsoSpgIds = new Set(balanceCUs.map(cu => cu.spgId).filter(Boolean));
+    const myLocalSpgIds = new Set(balanceCUs.map(cu => cu.localSpgId).filter(Boolean));
 
-    // 2. Filter verified bids for these SPGs within the time window
     const relevantBids = mockBids.filter(bid => {
         const bidDate = new Date(bid.timestamp);
         const diffHours = (POC_NOW.getTime() - bidDate.getTime()) / (1000 * 60 * 60);
         
-        return mySpgIds.has(bid.spgId) &&
+        // Match if bid is for a portfolio I have CUs in
+        const isMyPortfolio = myTsoSpgIds.has(bid.spgId) || myLocalSpgIds.has(bid.spgId);
+
+        return isMyPortfolio &&
                bidDate >= weekStart && bidDate <= weekEnd &&
                bid.selectionStatus === 'Selected' &&
                bid.status === 'Valid' &&
@@ -89,15 +86,17 @@ export const BrpRoleView: React.FC<Props> = ({ balanceCUs, brpStatsByRE, onSelec
     });
 
     relevantBids.forEach(bid => {
+        const isTSO = !bid.productId.startsWith('LM-');
+        
         const factor = getSeededDeliveryFactor(bid.id);
         const totalVerifiedMWh = bid.volumeMW * factor * 0.25;
 
-        // Find CUs in this SPG that belong to this BRP
-        const allSpgCUs = mockCUs.filter(c => c.spgId === bid.spgId);
+        // Find all CUs participating in this specific bid's portfolio
+        const allSpgCUs = mockCUs.filter(c => c.spgId === bid.spgId || c.localSpgId === bid.spgId);
+        // Find which of those are in my balance perimeter
         const mySpgCUs = allSpgCUs.filter(c => balanceCUs.some(bc => bc.id === c.id));
         
         if (mySpgCUs.length > 0) {
-            // Group my CUs by Retailer to show breakdown
             const reGroup = new Map<string, string[]>();
             mySpgCUs.forEach(c => {
                 const list = reGroup.get(c.re) || [];
@@ -109,30 +108,38 @@ export const BrpRoleView: React.FC<Props> = ({ balanceCUs, brpStatsByRE, onSelec
                 const share = cuIds.length / allSpgCUs.length;
                 const portionMWh = totalVerifiedMWh * share;
 
-                const existing = reMap.get(reName) || { totalMWh: 0, activations: [] };
+                const existing = reMap.get(reName) || { totalMWh: 0, tsoMWh: 0, dsoMWh: 0, activations: [] };
                 existing.totalMWh += portionMWh;
+                
+                if (isTSO) {
+                    existing.tsoMWh += portionMWh;
+                    totalTsoMWh += portionMWh;
+                } else {
+                    existing.dsoMWh += portionMWh;
+                    totalDsoMWh += portionMWh;
+                }
+
                 existing.activations.push({
                     bidId: bid.id,
                     product: bid.productId,
+                    isTSO,
                     spg: bid.spgId,
                     date: new Date(bid.timestamp).toLocaleDateString('sv-SE'),
                     cuIds: cuIds,
                     volumeMWh: portionMWh
                 });
                 reMap.set(reName, existing);
-                totalVolumeMWh += portionMWh;
             });
         }
     });
 
     return {
         reMap,
-        totalVolumeMWh,
-        totalCorrectionMWh: totalVolumeMWh // BRP usually gets 1:1 neutralization
+        totalTsoMWh,
+        totalDsoMWh,
+        totalVolumeMWh: totalTsoMWh + totalDsoMWh
     };
   }, [balanceCUs, weekStart, weekEnd]);
-
-  const totalCUsInPerimeter = balanceCUs.length;
 
   return (
     <div style={{ ...pocStyles.section, borderLeft: '4px solid #403294' }}>
@@ -147,10 +154,15 @@ export const BrpRoleView: React.FC<Props> = ({ balanceCUs, brpStatsByRE, onSelec
                 <Scale size={20} color="#403294" />
                 <h4 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700, color: '#403294', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Neutralization Volume (Week)</h4>
             </div>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#172b4d' }}>{settlementData.totalCorrectionMWh.toFixed(3)} MWh</div>
-            <p style={{ fontSize: '0.8rem', color: '#6b778c', marginTop: '8px', lineHeight: '1.4' }}>
-                Verified adjustment basis for imbalance settlement during <strong>{weekLabel}</strong>.
-            </p>
+            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#172b4d' }}>{settlementData.totalVolumeMWh.toFixed(3)} MWh</div>
+            <div style={{ display: 'flex', gap: '16px', marginTop: '12px', padding: '8px 12px', backgroundColor: 'rgba(255,255,255,0.5)', borderRadius: '6px' }}>
+                <div style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px', color: '#0052cc', fontWeight: 700 }}>
+                    <Globe size={12} /> TSO: {settlementData.totalTsoMWh.toFixed(3)}
+                </div>
+                <div style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px', color: '#4a148c', fontWeight: 700 }}>
+                    <TowerControl size={12} /> DSO: {settlementData.totalDsoMWh.toFixed(3)}
+                </div>
+            </div>
         </div>
         
         <div style={{ backgroundColor: '#f4f5f7', padding: '24px', borderRadius: '12px', border: '1px solid #dfe1e6', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
@@ -158,7 +170,7 @@ export const BrpRoleView: React.FC<Props> = ({ balanceCUs, brpStatsByRE, onSelec
                 <Activity size={20} color="#42526e" />
                 <h4 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700, color: '#6b778c', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Balanced Resources</h4>
             </div>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#172b4d' }}>{totalCUsInPerimeter} Units</div>
+            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#172b4d' }}>{balanceCUs.length} Units</div>
             <p style={{ fontSize: '0.8rem', color: '#6b778c', marginTop: '8px' }}>
                 Total controllable units currently registered in your balance perimeter.
             </p>
@@ -168,7 +180,7 @@ export const BrpRoleView: React.FC<Props> = ({ balanceCUs, brpStatsByRE, onSelec
       <div style={{ marginBottom: '24px', padding: '16px', backgroundColor: '#fafbfc', borderRadius: '8px', border: '1px solid #ebecf0', display: 'flex', gap: '12px', alignItems: 'center' }}>
           <Info size={18} color="#0052cc" />
           <p style={{ fontSize: '0.85rem', color: '#42526e', margin: 0 }}>
-            Neutralization volume is added back to the BRP's balance to ensure financial neutrality against flexibility activations.
+            Neutralization volume is added back to the BRP's balance. Volumes are categorized by market activation type (TSO Balancing vs DSO Local).
           </p>
       </div>
 
@@ -182,15 +194,16 @@ export const BrpRoleView: React.FC<Props> = ({ balanceCUs, brpStatsByRE, onSelec
             <tr>
               <th style={{ ...pocStyles.th, width: '40px' }}></th>
               <th style={pocStyles.th}>Retailer (RE)</th>
-              <th style={pocStyles.th}>CUs</th>
-              <th style={{ ...pocStyles.th, textAlign: 'right' }}>Verified Volume (MWh)</th>
+              <th style={{ ...pocStyles.th, textAlign: 'right' }}>TSO Vol (MWh)</th>
+              <th style={{ ...pocStyles.th, textAlign: 'right' }}>DSO Vol (MWh)</th>
+              <th style={{ ...pocStyles.th, textAlign: 'right' }}>Total (MWh)</th>
               <th style={{ ...pocStyles.th, width: '40px' }}></th>
             </tr>
           </thead>
           <tbody>
             {brpStatsByRE.map((stat) => {
               const isExpanded = expandedRe === stat.name;
-              const reSettlement = settlementData.reMap.get(stat.name) || { totalMWh: 0, activations: [] };
+              const reSettlement = settlementData.reMap.get(stat.name) || { totalMWh: 0, tsoMWh: 0, dsoMWh: 0, activations: [] };
               
               const totalActivations = reSettlement.activations.length;
               const totalDetailPages = Math.ceil(totalActivations / DETAIL_PAGE_SIZE);
@@ -211,9 +224,14 @@ export const BrpRoleView: React.FC<Props> = ({ balanceCUs, brpStatsByRE, onSelec
                         {stat.name}
                       </div>
                     </td>
-                    <td style={pocStyles.td}>{stat.count}</td>
-                    <td style={{ ...pocStyles.td, textAlign: 'right', fontWeight: 600, color: reSettlement.totalMWh > 0 ? '#1b5e20' : '#6b778c' }}>
-                        {reSettlement.totalMWh.toFixed(3)} MWh
+                    <td style={{ ...pocStyles.td, textAlign: 'right', color: '#0052cc', fontSize: '0.85rem' }}>
+                        {reSettlement.tsoMWh > 0 ? reSettlement.tsoMWh.toFixed(3) : '-'}
+                    </td>
+                    <td style={{ ...pocStyles.td, textAlign: 'right', color: '#4a148c', fontSize: '0.85rem' }}>
+                        {reSettlement.dsoMWh > 0 ? reSettlement.dsoMWh.toFixed(3) : '-'}
+                    </td>
+                    <td style={{ ...pocStyles.td, textAlign: 'right', fontWeight: 600, color: '#1b5e20' }}>
+                        {reSettlement.totalMWh.toFixed(3)}
                     </td>
                     <td style={pocStyles.td}>
                         <ArrowRight size={14} color="#0052cc" style={{ opacity: isExpanded ? 1 : 0.3 }} />
@@ -222,7 +240,7 @@ export const BrpRoleView: React.FC<Props> = ({ balanceCUs, brpStatsByRE, onSelec
                   
                   {isExpanded && (
                     <tr>
-                      <td colSpan={5} style={{ padding: '0', backgroundColor: '#f9f8ff' }}>
+                      <td colSpan={6} style={{ padding: '0', backgroundColor: '#f9f8ff' }}>
                         <div style={{ padding: '24px', borderBottom: '2px solid #dcd7f7' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -231,11 +249,6 @@ export const BrpRoleView: React.FC<Props> = ({ balanceCUs, brpStatsByRE, onSelec
                                         Verified Resource Activations for {stat.name}
                                     </span>
                                 </div>
-                                {totalActivations > DETAIL_PAGE_SIZE && (
-                                    <div style={{ fontSize: '0.75rem', color: '#6b778c', fontStyle: 'italic' }}>
-                                        Showing {pagedActivations.length} of {totalActivations} activations
-                                    </div>
-                                )}
                             </div>
                             
                             {totalActivations > 0 ? (
@@ -245,10 +258,9 @@ export const BrpRoleView: React.FC<Props> = ({ balanceCUs, brpStatsByRE, onSelec
                                         <tr>
                                             <th style={{ ...pocStyles.th, fontSize: '0.75rem' }}>Resource (CU)</th>
                                             <th style={{ ...pocStyles.th, fontSize: '0.75rem' }}>Source</th>
-                                            <th style={{ ...pocStyles.th, fontSize: '0.75rem' }}>Portfolio (SPG)</th>
+                                            <th style={{ ...pocStyles.th, fontSize: '0.75rem' }}>Market Type</th>
                                             <th style={{ ...pocStyles.th, fontSize: '0.75rem' }}>Product</th>
-                                            <th style={{ ...pocStyles.th, fontSize: '0.75rem' }}>Date</th>
-                                            <th style={{ ...pocStyles.th, fontSize: '0.75rem', textAlign: 'right' }}>Quantified (MWh)</th>
+                                            <th style={{ ...pocStyles.th, fontSize: '0.75rem', textAlign: 'right' }}>Neutralization (MWh)</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -287,51 +299,31 @@ export const BrpRoleView: React.FC<Props> = ({ balanceCUs, brpStatsByRE, onSelec
                                                         </span>
                                                     </td>
                                                     <td style={{ ...pocStyles.td, fontSize: '0.8rem' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                            <Layers size={12} color="#6b778c" />
-                                                            {detail.spg}
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: detail.isTSO ? '#0052cc' : '#4a148c', fontWeight: 700 }}>
+                                                            {detail.isTSO ? <Globe size={12} /> : <TowerControl size={12} />}
+                                                            {detail.isTSO ? 'TSO Balancing' : 'DSO Local'}
                                                         </div>
                                                     </td>
                                                     <td style={pocStyles.td}>
                                                         <span style={{ ...pocStyles.badge, ...pocStyles.badgeBlue, fontSize: '0.65rem' }}>{detail.product}</span>
                                                     </td>
-                                                    <td style={pocStyles.td}>
-                                                        <div style={{ fontSize: '0.75rem', color: '#6b778c' }}>
-                                                            {detail.date}
-                                                        </div>
-                                                    </td>
-                                                    <td style={{ ...pocStyles.td, textAlign: 'right', fontWeight: 700, color: '#1b5e20' }}>
+                                                    <td style={{ ...pocStyles.td, textAlign: 'right', fontWeight: 700, color: '#403294' }}>
                                                         +{detail.volumeMWh.toFixed(3)}
                                                     </td>
                                                 </tr>
                                             );
                                         })}
                                     </tbody>
-                                    {totalActivations <= DETAIL_PAGE_SIZE && (
-                                        <tfoot style={{ backgroundColor: '#fafbfc' }}>
-                                            <tr>
-                                                <td colSpan={5} style={{ ...pocStyles.td, textAlign: 'right', fontWeight: 700, fontSize: '0.8rem' }}>RE TOTAL:</td>
-                                                <td style={{ ...pocStyles.td, textAlign: 'right', fontWeight: 800, color: '#1b5e20' }}>{reSettlement.totalMWh.toFixed(3)} MWh</td>
-                                            </tr>
-                                        </tfoot>
-                                    )}
                                 </table>
 
-                                {/* Pagination Controls for Detail */}
                                 {totalActivations > DETAIL_PAGE_SIZE && (
                                     <div style={{ 
                                         display: 'flex', 
-                                        justifyContent: 'space-between', 
+                                        justifyContent: 'flex-end', 
                                         alignItems: 'center', 
                                         marginTop: '16px',
-                                        padding: '12px 16px',
-                                        backgroundColor: '#fff',
-                                        borderRadius: '6px',
-                                        border: '1px solid #dcd7f7'
+                                        gap: '12px'
                                     }}>
-                                        <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#403294' }}>
-                                            RE TOTAL: {reSettlement.totalMWh.toFixed(3)} MWh
-                                        </div>
                                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                             <button 
                                                 disabled={detailPage === 0}
@@ -379,7 +371,12 @@ export const BrpRoleView: React.FC<Props> = ({ balanceCUs, brpStatsByRE, onSelec
             <tr>
               <td style={pocStyles.td}></td>
               <td style={{ ...pocStyles.td, fontWeight: 700 }}>TOTAL PERIMETER</td>
-              <td style={{ ...pocStyles.td, fontWeight: 700 }}>{totalCUsInPerimeter} Units</td>
+              <td style={{ ...pocStyles.td, textAlign: 'right', fontWeight: 600, color: '#0052cc' }}>
+                {settlementData.totalTsoMWh.toFixed(3)}
+              </td>
+              <td style={{ ...pocStyles.td, textAlign: 'right', fontWeight: 600, color: '#4a148c' }}>
+                {settlementData.totalDsoMWh.toFixed(3)}
+              </td>
               <td style={{ ...pocStyles.td, textAlign: 'right', fontWeight: 800, color: '#1b5e20' }}>
                 {settlementData.totalVolumeMWh.toFixed(3)} MWh
               </td>

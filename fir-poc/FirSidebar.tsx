@@ -21,7 +21,8 @@ import {
   FilePieChart,
   UserPlus,
   ShieldCheck,
-  MapPin
+  MapPin,
+  ClipboardCheck
 } from 'lucide-react';
 import { pocStyles } from './styles';
 
@@ -55,7 +56,8 @@ export type PocView =
   | 'verification'
   | 'settlement_result'
   | 'brp_settlement'
-  | 're_settlement';
+  | 're_settlement'
+  | 'local_flex_settlement';
 
 interface SidebarProps {
   currentView: PocView;
@@ -65,7 +67,9 @@ interface SidebarProps {
 export const FirSidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }) => {
   
   const renderItem = (view: PocView, IconComponent: any, label: string) => {
-    const isActive = currentView === view || (view === 'grid_constraints' && currentView === 'grid_constraint_detail') || (view === 'local_markets' && currentView === 'local_market_detail');
+    const isActive = currentView === view || 
+                    (view === 'grid_constraints' && currentView === 'grid_constraint_detail') || 
+                    (view === 'local_markets' && currentView === 'local_market_detail');
     return (
       <div 
         onClick={() => onNavigate(view)}
@@ -120,14 +124,15 @@ export const FirSidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }) 
 
         {renderTitle('Settlement')}
         {renderItem('verification', CheckCircle2, 'Verification Status')}
-        {renderItem('settlement_result', FileBarChart, 'BSP settlement')}
+        {renderItem('settlement_result', FileBarChart, 'BSP settlement (TSO)')}
+        {renderItem('local_flex_settlement', ClipboardCheck, 'Local flex settlement (DSO)')}
         {renderItem('brp_settlement', FilePieChart, 'BRP settlement')}
         {renderItem('re_settlement', FilePieChart, 'RE settlement')}
 
         {renderTitle('Market parameter')}
         {renderItem('baselines', TrendingUp, 'Baselines')}
         {renderItem('prod_types', Settings, 'Product types')}
-        {renderItem('local_markets', MapPin, 'Local flexmarknad')}
+        {renderItem('local_markets', MapPin, 'Local Markets')}
 
         {renderTitle('Product application')}
         {renderItem('sp_applications', FileText, 'Service provider applications')}

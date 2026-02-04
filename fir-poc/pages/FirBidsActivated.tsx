@@ -13,9 +13,11 @@ import {
   MapPin,
   CheckCircle2,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Globe,
+  TowerControl
 } from 'lucide-react';
-import { mockBids } from '../mockData';
+import { mockBids, svkProducts } from '../mockData';
 
 const PAGE_SIZE = 20;
 
@@ -116,6 +118,7 @@ export const FirBidsActivated: React.FC<Props> = ({ onSelectBid, onSelectSPG, on
                             <th style={pocStyles.th}>Bid Reference</th>
                             <th style={pocStyles.th}>Portfolio (SPG)</th>
                             <th style={pocStyles.th}>Product</th>
+                            <th style={pocStyles.th}>Market / Operator</th>
                             <th style={pocStyles.th}>Bid Zone</th>
                             <th style={pocStyles.th}>Delivery Period</th>
                             <th style={{...pocStyles.th, textAlign: 'right'}}>Awarded Vol (MW)</th>
@@ -126,6 +129,8 @@ export const FirBidsActivated: React.FC<Props> = ({ onSelectBid, onSelectSPG, on
                         {bids.map((bid, idx) => {
                             const actBadge = getActivationBadge(bid.activationStatus);
                             const dateObj = new Date(bid.timestamp);
+                            const productMeta = svkProducts.find(p => p.id === bid.productId);
+                            
                             return (
                                 <tr key={bid.id} style={{...pocStyles.row, backgroundColor: idx % 2 === 1 ? '#fafbfc' : '#fff'}}>
                                     <td 
@@ -150,6 +155,15 @@ export const FirBidsActivated: React.FC<Props> = ({ onSelectBid, onSelectSPG, on
                                         <span style={{...pocStyles.badge, ...pocStyles.badgeBlue, display: 'inline-flex', alignItems: 'center', gap: '4px'}}>
                                             <Zap size={10} /> {bid.productId}
                                         </span>
+                                    </td>
+                                    <td style={pocStyles.td}>
+                                        <div style={{display: 'flex', flexDirection: 'column', gap: '2px'}}>
+                                            <div style={{display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: '#172b4d', fontWeight: 600}}>
+                                                {productMeta?.market.includes('TSO') ? <Globe size={12} color="#0052cc" /> : <TowerControl size={12} color="#4a148c" />}
+                                                {productMeta?.market || 'Unknown'}
+                                            </div>
+                                            <span style={{fontSize: '0.7rem', color: '#6b778c'}}>{productMeta?.operator || '-'}</span>
+                                        </div>
                                     </td>
                                     <td style={pocStyles.td}>
                                         <div style={{display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', color: '#42526e', fontWeight: 600}}>
@@ -189,13 +203,6 @@ export const FirBidsActivated: React.FC<Props> = ({ onSelectBid, onSelectSPG, on
                                 </tr>
                             );
                         })}
-                        {bids.length === 0 && (
-                            <tr>
-                                <td colSpan={7} style={{...pocStyles.td, textAlign: 'center', padding: '32px', color: '#6b778c', fontStyle: 'italic'}}>
-                                    No entries to display.
-                                </td>
-                            </tr>
-                        )}
                     </tbody>
                 </table>
                 
@@ -245,7 +252,7 @@ export const FirBidsActivated: React.FC<Props> = ({ onSelectBid, onSelectSPG, on
                     <strong style={{color: '#0747a6'}}>Market Dispatch & Activation Registry</strong>
                 </div>
                 <p style={{margin: 0, fontSize: '0.9rem', color: '#172b4d', lineHeight: '1.5'}}>
-                    Tracking bids selected by the TSO. This view displays current delivery obligations (Scheduled) and historical outcomes. Paginated at {PAGE_SIZE} per page.
+                    Tracking bids selected by the TSO or DSO. This view displays current delivery obligations (Scheduled) and historical outcomes. Paginated at {PAGE_SIZE} per page.
                 </p>
             </div>
 

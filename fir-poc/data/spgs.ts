@@ -16,7 +16,8 @@ const generateSpgRegistry = (): SPG[] => {
           fsp: bsp.name,
           zone: zone,
           status: 'Active',
-          qualifications: ['FCR-N', 'FCR-D-UP', 'FCR-D-DOWN', 'mFRR', 'aFRR']
+          qualifications: ['FCR-N', 'FCR-D-UP', 'FCR-D-DOWN', 'mFRR', 'aFRR'],
+          marketType: 'TSO'
         },
         {
           id: `SPG-${bspSlug}-${zone}-FCR`,
@@ -24,7 +25,8 @@ const generateSpgRegistry = (): SPG[] => {
           fsp: bsp.name,
           zone: zone,
           status: 'Active',
-          qualifications: ['FCR-N', 'FCR-D-UP', 'FCR-D-DOWN']
+          qualifications: ['FCR-N', 'FCR-D-UP', 'FCR-D-DOWN'],
+          marketType: 'TSO'
         },
         {
           id: `SPG-${bspSlug}-${zone}-mFRR`,
@@ -32,7 +34,17 @@ const generateSpgRegistry = (): SPG[] => {
           fsp: bsp.name,
           zone: zone,
           status: 'Active',
-          qualifications: ['mFRR', 'aFRR']
+          qualifications: ['mFRR', 'aFRR'],
+          marketType: 'TSO'
+        },
+        {
+          id: `SPG-${bspSlug}-${zone}-Local`,
+          name: `${bsp.name} - ${zone} - Local Flexibility`,
+          fsp: bsp.name,
+          zone: zone,
+          status: 'Active',
+          qualifications: ['LM-EON-DIR', 'LM-EON-AVA', 'LM-EON-SEA'],
+          marketType: 'Local'
         }
       ];
     });

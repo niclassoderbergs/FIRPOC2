@@ -24,7 +24,8 @@ export interface CU {
   biddingZone: string;
   accountingPoint: string;
   ownerId: string;
-  spgId?: string;
+  spgId?: string; // TSO Portfolio ID
+  localSpgId?: string; // Local/DSO Portfolio ID
   registrationResponsible: string; // Den som registrerade CUn
   productBaselines: { productId: string; methodId: string }[];
   relationshipHistory?: RelationshipRecord[];
@@ -46,6 +47,7 @@ export interface SPG {
   zone: string;
   status: 'Active' | 'Qualification Pending' | 'Suspended';
   qualifications: string[];
+  marketType: 'TSO' | 'Local';
 }
 
 export interface Bid {
@@ -85,6 +87,14 @@ export interface GridConstraint {
   reason: string;
 }
 
+export interface LocalMarketProduct {
+  name: string;
+  timeHorizon: string;
+  remuneration: string;
+  qualification: string;
+  type: 'Activation' | 'Availability';
+}
+
 export interface LocalMarket {
   id: string;
   name: string;
@@ -92,4 +102,5 @@ export interface LocalMarket {
   description: string;
   status: 'Active' | 'Planned';
   products: string[];
+  detailedProducts?: LocalMarketProduct[];
 }
