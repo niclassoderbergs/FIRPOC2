@@ -15,6 +15,14 @@ import {
 
 const roles = [
   {
+    title: 'CU Reg. Responsible (CURR)',
+    icon: UserPlus,
+    color: '#4a148c',
+    bg: '#f3e5f5',
+    desc: 'Handles the technical life cycle in FIR, including onboarding, updating, and decommissioning of controllable units (CUs).',
+    isBundle: true
+  },
+  {
     title: 'Service Provider (SP)',
     icon: ShieldCheck,
     color: '#006d5b',
@@ -28,14 +36,6 @@ const roles = [
     color: '#0747a6',
     bg: '#deebff',
     desc: 'Required for traceability when an SP sells services from an SPG to the TSO balancing market. Must hold a valid BSP agreement with the TSO.',
-    isBundle: true
-  },
-  {
-    title: 'CU Reg. Responsible (CURR)',
-    icon: UserPlus,
-    color: '#4a148c',
-    bg: '#f3e5f5',
-    desc: 'Handles the technical life cycle in FIR, including onboarding, updating, and decommissioning of controllable units (CUs).',
     isBundle: true
   },
   {
